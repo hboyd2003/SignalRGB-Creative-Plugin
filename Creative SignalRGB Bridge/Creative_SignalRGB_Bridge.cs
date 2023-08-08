@@ -1,29 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Diagnostics;
-using System.Linq;
 using System.ServiceProcess;
 using System.Text;
-using System.Threading.Tasks;
-
-using System;
-using System.ServiceProcess;
-using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using Microsoft.Win32.SafeHandles;
 using System.Runtime.InteropServices;
-using System;
-using System.Runtime.InteropServices;
-using Microsoft.Win32.SafeHandles;
-using System.IO;
-using System.Text;
-using System;
-using System.Runtime.InteropServices;
-using Microsoft.Win32.SafeHandles;
-using System.IO;
 
 namespace Creative_SignalRGB_Bridge
 {
@@ -57,8 +38,13 @@ namespace Creative_SignalRGB_Bridge
 
 
         private const int ListenPort = 12345; 
-        private const string SearchMessage = "Z-SEARCH *";
+        private const string SearchMessage = "LIST DEVICES";
         private UdpClient listener = null;
+        private string devicePath;
+        SafeFileHandle deviceHandle;
+        IntPtr lpInBuffer;
+        IntPtr lpOutBuffer;
+
 
         public Creative_SignalRGB_Bridge()
         {
@@ -68,8 +54,15 @@ namespace Creative_SignalRGB_Bridge
         protected override void OnStart(string[] args)
         {
             System.Diagnostics.Debugger.Launch();
+         
+            if (discoverDevice())
+            {
+                StartListening();
+            } else
+            {
+                Stop();
+            }
             
-            StartListening();
         }
 
         protected override void OnStop()
@@ -82,7 +75,8 @@ namespace Creative_SignalRGB_Bridge
 
         private bool discoverDevice()
         {
-            Guid deviceInterfaceClassGuid = new Guid("c37acb87-d563-4aa0-b761-996e7864af79");
+            //TODO: Add support for more devices than just the AE-5
+            Guid deviceInterfaceClassGuid = new Guid("c37acb87-d563-4aa0-b761-996e7864af79"); //Unknown if the Interface Class GUID is unique to AE-5.
 
             IntPtr deviceInfoSet = SetupDiGetClassDevs(ref deviceInterfaceClassGuid, IntPtr.Zero, IntPtr.Zero, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
             if (deviceInfoSet != IntPtr.Zero)
@@ -105,8 +99,8 @@ namespace Creative_SignalRGB_Bridge
                         string devicePath = Marshal.PtrToStringAuto(pDevicePathName);
 
 
-                        Console.WriteLine("Device path: " + devicePath);
-                        Console.ReadKey();
+                        Debug.WriteLine("Device path: " + devicePath);
+                        this.devicePath = devicePath;
                         return true;
                         //openDevice(devicePath);
                     }
@@ -116,6 +110,29 @@ namespace Creative_SignalRGB_Bridge
                 }
             }
             return false;
+        }
+
+        private bool openDevice(string devicePath)
+        {
+            deviceHandle = CreateFile(devicePath, 0xc0000000, 0x00000003, IntPtr.Zero, 0x00000003, 0, IntPtr.Zero);
+            if (deviceHandle.IsInvalid)
+            {
+                //Send out error
+                return false;
+            }
+            //Create buffers
+           
+            byte[] nInputBuffer = new byte[1044];
+            GCHandle inputHandle = GCHandle.Alloc(nInputBuffer, GCHandleType.Pinned);
+            IntPtr lpInBuffer = inputHandle.AddrOfPinnedObject();
+            //Marshal.Copy(nInputBuffer, 0, lpInBuffer, nInputBuffer.Length);
+
+            byte[] nOutBuffer = new byte[1044];
+            GCHandle outputHandle = GCHandle.Alloc(nOutBuffer, GCHandleType.Pinned);
+            IntPtr lpOutBuffer = outputHandle.AddrOfPinnedObject();
+            Marshal.Copy(lpOutBuffer, nOutBuffer, 0, nOutBuffer.Length);
+
+            return true;
         }
 
         private async void StartListening()
@@ -139,6 +156,15 @@ namespace Creative_SignalRGB_Bridge
             }
         }
 
+        private void sendCommand(byte[] nInputBuffer)
+        {
+            uint IOCTL_CODE = 0x77772400; // Believed to be the set RGB Code
+            uint nInBufferSize = 1044;
+            Marshal.Copy(nInputBuffer, 0, lpInBuffer, nInputBuffer.Length);
+            uint bytesReturned
+            bool result = DeviceIoControl(deviceHandle, IOCTL_CODE, lpInBuffer, nInBufferSize, lpOutBuffer, 1044, out bytesReturned, IntPtr.Zero);
+        }
+
         private void HandleReceivedMessage(UdpReceiveResult result)
         {
             string message = Encoding.UTF8.GetString(result.Buffer);
@@ -148,9 +174,15 @@ namespace Creative_SignalRGB_Bridge
             if (message.Trim().Equals(SearchMessage))
             {
                 Debug.WriteLine("Recieved Search Message");
-                string responseMessage = "Your response here";
+                string responseMessage = "Soundblaster AE-5";
                 byte[] responseData = Encoding.UTF8.GetBytes(responseMessage);
                 listener.Send(responseData, responseData.Length, result.RemoteEndPoint);
+            } else if (message.Trim().Equals("Soundblaster AE-5"))
+            {
+                openDevice(devicePath);
+            } else if (result.Buffer.Length == 1044 && result.Buffer[0] == 3)
+            {
+
             }
         }
     }
