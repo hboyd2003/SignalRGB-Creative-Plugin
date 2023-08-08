@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.6.33829.357
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Creative SignalRGB Bridge", "Creative SignalRGB Bridge.csproj", "{665B9BAD-1E45-4CE3-BDA8-91AABD9FD20D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{665B9BAD-1E45-4CE3-BDA8-91AABD9FD20D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{665B9BAD-1E45-4CE3-BDA8-91AABD9FD20D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{665B9BAD-1E45-4CE3-BDA8-91AABD9FD20D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{665B9BAD-1E45-4CE3-BDA8-91AABD9FD20D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {9BA306FB-0729-439B-ACB6-5A0D1B5F4251}
+	EndGlobalSection
+EndGlobal
