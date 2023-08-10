@@ -1,0 +1,48 @@
+﻿<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+	<Package Name="Creative SignalRGB Bridge"
+		Manufacturer="Prismo"
+		Version="1.0.0.0"
+		UpgradeCode="c04a0f76-b793-4ab0-80c7-d37943f19888"
+		Compressed="true">
+	<MajorUpgrade DowngradeErrorMessage="!(loc.DowngradeError)" />
+		
+	<Directory Id="TARGETDIR" Name="SourceDir">
+		<Directory Id="ProgramFiles6432Folder">
+			<Directory Id="INSTALLFOLDER" Name="$(Name)" />
+		</Directory>
+	</Directory>
+
+
+	<DirectoryRef Id="INSTALLFOLDER">
+
+		<Component Id="ServiceExecutable" Bitness="always64">
+
+			<File Id="Creative SignalRGB Bridge.exe"
+                    Source="$(var.Creative SignalRGB Bridge.TargetDir)publish\Creative SignalRGB Bridge.exe"
+                    KeyPath="true" />
+
+			<RemoveFile Id="ALLFILES" Name="*.*" On="both" />
+
+			<ServiceInstall Id="ServiceInstaller"
+                            Type="ownProcess"
+                            Name="Creative SignalRGB Bridge"
+                            DisplayName="$(Name)"
+                            Description="Allows a SignalRGB to control the RGB Leds on some creative PCIE devices"
+                            Start="auto"
+                            ErrorControl="normal" />
+
+			<ServiceControl Id="StartService"
+                            Start="install"
+                            Stop="both"
+                            Remove="uninstall"
+                            Name="App.WindowsService"
+                            Wait="true" />
+		</Component>
+	</DirectoryRef>
+
+	<Feature Id="Service" Title="Creative SignalRGB Bridge" Level="1">
+		<ComponentRef Id="ServiceExecutable" />
+	</Feature>
+	  
+	</Package>
+</Wix>
