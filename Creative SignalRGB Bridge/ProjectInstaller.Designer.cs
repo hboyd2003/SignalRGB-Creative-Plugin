@@ -39,9 +39,10 @@
             // 
             // serviceInstaller1
             // 
-            this.serviceInstaller1.Description = "Creative Soundblaster SignalRGB Bridge";
+            this.serviceInstaller1.Description = "Allows a SignalRGB to control the RGB Leds on some creative PCIE devices";
             this.serviceInstaller1.DisplayName = "Creative SignalRGB Bridge";
             this.serviceInstaller1.ServiceName = "Creative_SignalRGB_Bridge";
+            this.serviceInstaller1.StartType = System.ServiceProcess.ServiceStartMode.Automatic;
             this.serviceInstaller1.AfterInstall += new System.Configuration.Install.InstallEventHandler(this.serviceInstaller1_AfterInstall);
             // 
             // ProjectInstaller
