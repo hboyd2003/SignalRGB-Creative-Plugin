@@ -107,7 +107,7 @@ namespace Creative_SignalRGB_Bridge_Service
                         string devicePath = Marshal.PtrToStringAuto(pDevicePathName);
 
 
-                        Debug.WriteLine("Device path: " + devicePath);
+                        //Debug.WriteLine("Device path: " + devicePath);
                         this.devicePath = devicePath;
                         return true;
                         //openDevice(devicePath);
@@ -160,7 +160,7 @@ namespace Creative_SignalRGB_Bridge_Service
 
             if (message.Trim().Equals(SearchMessage))
             {
-                Debug.WriteLine("Recieved Search Message");
+                //Debug.WriteLine("Recieved Search Message");
                 string responseMessage = "Soundblaster AE-5";
                 byte[] responseData = Encoding.UTF8.GetBytes(responseMessage);
                 IPEndPoint loopback = new IPEndPoint(IPAddress.Loopback, 12347);
@@ -176,7 +176,7 @@ namespace Creative_SignalRGB_Bridge_Service
                 byte[] bytes = Convert.FromBase64String(message);
                 if (bytes.Length == 1044 && bytes[0] == 3)
                 {
-                    Debug.WriteLine("BUFFER!");
+                    //Debug.WriteLine("BUFFER!");
                     sendCommand(bytes);
                 }
             } catch { }
