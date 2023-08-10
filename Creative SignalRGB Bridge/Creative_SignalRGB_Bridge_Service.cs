@@ -7,9 +7,9 @@ using Microsoft.Win32.SafeHandles;
 using System.Runtime.InteropServices;
 using System.Net;
 
-namespace Creative_SignalRGB_Bridge
+namespace Creative_SignalRGB_Bridge_Service
 {
-    public partial class Creative_SignalRGB_Bridge : ServiceBase
+    public partial class Creative_SignalRGB_Bridge_Service : ServiceBase
     {
         [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         public static extern SafeFileHandle CreateFile(string lpFileName, uint dwDesiredAccess, uint dwShareMode, IntPtr lpSecurityAttributes, uint dwCreationDisposition, uint dwFlagsAndAttributes, IntPtr hTemplateFile);
@@ -48,14 +48,14 @@ namespace Creative_SignalRGB_Bridge
         IntPtr lpOutBuffer;
 
 
-        public Creative_SignalRGB_Bridge()
+        public Creative_SignalRGB_Bridge_Service()
         {
             InitializeComponent();
         }
 
         protected override void OnStart(string[] args)
         {
-            System.Diagnostics.Debugger.Launch();
+            //System.Diagnostics.Debugger.Launch();
          
             if (discoverDevice())
             {

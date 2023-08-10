@@ -5,7 +5,7 @@ using System.ServiceProcess;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Creative_SignalRGB_Bridge
+namespace Creative_SignalRGB_Bridge_Service
 {
     internal static class Program
     {
@@ -17,7 +17,7 @@ namespace Creative_SignalRGB_Bridge
             ServiceBase[] ServicesToRun;
             ServicesToRun = new ServiceBase[]
             {
-                new Creative_SignalRGB_Bridge()
+                new Creative_SignalRGB_Bridge_Service()
             };
             ServiceBase.Run(ServicesToRun);
         }

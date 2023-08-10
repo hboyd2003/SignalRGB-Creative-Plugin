@@ -1,6 +1,6 @@
-﻿namespace Creative_SignalRGB_Bridge
+﻿namespace Creative_SignalRGB_Bridge_Service
 {
-    partial class Creative_SignalRGB_Bridge
+    partial class Creative_SignalRGB_Bridge_Service
     {
         /// <summary> 
         /// Required designer variable.

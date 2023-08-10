@@ -1,4 +1,4 @@
-﻿namespace Creative_SignalRGB_Bridge
+﻿namespace Creative_SignalRGB_Bridge_Service
 {
     partial class ProjectInstaller
     {
