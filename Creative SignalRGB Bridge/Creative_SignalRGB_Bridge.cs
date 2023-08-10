@@ -5,6 +5,7 @@ using System.Text;
 using System.Net.Sockets;
 using Microsoft.Win32.SafeHandles;
 using System.Runtime.InteropServices;
+using System.Net;
 
 namespace Creative_SignalRGB_Bridge
 {
@@ -37,11 +38,12 @@ namespace Creative_SignalRGB_Bridge
         const uint DIGCF_DEVICEINTERFACE = 0x10;
 
 
-        private const int ListenPort = 12345; 
+        private const int ListenPort = 12346; 
         private const string SearchMessage = "LIST DEVICES";
         private UdpClient listener = null;
         private string devicePath;
-        SafeFileHandle deviceHandle;
+        SafeFileHandle deviceHandle = null;
+        
         IntPtr lpInBuffer;
         IntPtr lpOutBuffer;
 
@@ -57,7 +59,13 @@ namespace Creative_SignalRGB_Bridge
          
             if (discoverDevice())
             {
-                StartListening();
+                listener = new UdpClient(ListenPort);
+                IPEndPoint groupEP = new IPEndPoint(IPAddress.Broadcast, ListenPort);
+                
+                while (true) {
+                    HandleReceivedMessage(listener.Receive(ref groupEP));
+                }
+
             } else
             {
                 Stop();
@@ -124,36 +132,15 @@ namespace Creative_SignalRGB_Bridge
            
             byte[] nInputBuffer = new byte[1044];
             GCHandle inputHandle = GCHandle.Alloc(nInputBuffer, GCHandleType.Pinned);
-            IntPtr lpInBuffer = inputHandle.AddrOfPinnedObject();
+            this.lpInBuffer = inputHandle.AddrOfPinnedObject();
             //Marshal.Copy(nInputBuffer, 0, lpInBuffer, nInputBuffer.Length);
 
             byte[] nOutBuffer = new byte[1044];
             GCHandle outputHandle = GCHandle.Alloc(nOutBuffer, GCHandleType.Pinned);
-            IntPtr lpOutBuffer = outputHandle.AddrOfPinnedObject();
+            this.lpOutBuffer = outputHandle.AddrOfPinnedObject();
             Marshal.Copy(lpOutBuffer, nOutBuffer, 0, nOutBuffer.Length);
 
             return true;
-        }
-
-        private async void StartListening()
-        {
-            try
-            {
-                while (true)
-                {
-                    UdpReceiveResult result = await listener.ReceiveAsync();
-                    HandleReceivedMessage(result);
-                }
-            }
-            catch (SocketException se)
-            {
-                // Handle exceptions accordingly, e.g., write to an event log
-            }
-            catch (ObjectDisposedException)
-            {
-                // This exception will be thrown when stopping the service and closing the listener.
-                // It can be safely ignored or used for logging.
-            }
         }
 
         private void sendCommand(byte[] nInputBuffer)
@@ -161,29 +148,38 @@ namespace Creative_SignalRGB_Bridge
             uint IOCTL_CODE = 0x77772400; // Believed to be the set RGB Code
             uint nInBufferSize = 1044;
             Marshal.Copy(nInputBuffer, 0, lpInBuffer, nInputBuffer.Length);
-            uint bytesReturned
+            uint bytesReturned;
             bool result = DeviceIoControl(deviceHandle, IOCTL_CODE, lpInBuffer, nInBufferSize, lpOutBuffer, 1044, out bytesReturned, IntPtr.Zero);
         }
 
-        private void HandleReceivedMessage(UdpReceiveResult result)
+        private void HandleReceivedMessage(byte[] udpMessage)
         {
-            string message = Encoding.UTF8.GetString(result.Buffer);
+            string message = Encoding.UTF8.GetString(udpMessage);
 
-            Debug.WriteLine(message);
+            //Debug.WriteLine("Recieved Message: " + bytes);
 
             if (message.Trim().Equals(SearchMessage))
             {
                 Debug.WriteLine("Recieved Search Message");
                 string responseMessage = "Soundblaster AE-5";
                 byte[] responseData = Encoding.UTF8.GetBytes(responseMessage);
-                listener.Send(responseData, responseData.Length, result.RemoteEndPoint);
-            } else if (message.Trim().Equals("Soundblaster AE-5"))
+                IPEndPoint loopback = new IPEndPoint(IPAddress.Loopback, 12347);
+                listener.Send(responseData, responseData.Length, loopback);
+            }
+            if (deviceHandle == null)
             {
                 openDevice(devicePath);
-            } else if (result.Buffer.Length == 1044 && result.Buffer[0] == 3)
-            {
-
             }
+
+            try
+            {
+                byte[] bytes = Convert.FromBase64String(message);
+                if (bytes.Length == 1044 && bytes[0] == 3)
+                {
+                    Debug.WriteLine("BUFFER!");
+                    sendCommand(bytes);
+                }
+            } catch { }
         }
     }
 }
