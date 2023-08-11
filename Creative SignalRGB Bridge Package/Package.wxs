@@ -1,24 +1,26 @@
-﻿<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
-	<Package Name="Creative SignalRGB Bridge"
+﻿<?xml version="1.0" encoding="UTF-8"?>
+
+<?define Name = "Creative SignalRGB Bridge" ?>
+
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+	<Package Name="$(Name)"
 		Manufacturer="Prismo"
-		Version="1.0.0.0"
+		Version="!(bind.fileVersion.CreativeSignalRGBBridge)"
 		UpgradeCode="c04a0f76-b793-4ab0-80c7-d37943f19888"
 		Compressed="true">
 	<MajorUpgrade DowngradeErrorMessage="!(loc.DowngradeError)" />
-		
-	<Directory Id="TARGETDIR" Name="SourceDir">
-		<Directory Id="ProgramFiles6432Folder">
-			<Directory Id="INSTALLFOLDER" Name="$(Name)" />
-		</Directory>
-	</Directory>
+
+	<StandardDirectory Id="ProgramFiles6432Folder">
+		<Directory Id="INSTALLFOLDER" Name="!(bind.Property.ProductName)" />
+	</StandardDirectory>
 
 
 	<DirectoryRef Id="INSTALLFOLDER">
 
 		<Component Id="ServiceExecutable" Bitness="always64">
 
-			<File Id="Creative SignalRGB Bridge.exe"
-                    Source="$(var.Creative SignalRGB Bridge.TargetDir)publish\Creative SignalRGB Bridge.exe"
+			<File Id="CreativeSignalRGBBridge"
+                    Source="$(var.Creative_SignalRGB_Bridge_Service.TargetDir)Creative SignalRGB Bridge.exe"
                     KeyPath="true" />
 
 			<RemoveFile Id="ALLFILES" Name="*.*" On="both" />
@@ -35,7 +37,7 @@
                             Start="install"
                             Stop="both"
                             Remove="uninstall"
-                            Name="App.WindowsService"
+                            Name="Creative SignalRGB Bridge"
                             Wait="true" />
 		</Component>
 	</DirectoryRef>

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using System.ServiceProcess;
 using System.Text;
 using System.Net.Sockets;
