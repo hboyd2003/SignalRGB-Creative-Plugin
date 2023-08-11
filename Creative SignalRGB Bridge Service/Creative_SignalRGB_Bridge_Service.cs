@@ -48,7 +48,7 @@ namespace Creative_SignalRGB_Bridge_Service
             public int cbSize;
             public Guid interfaceClassGuid;
             public int flags;
-            private IntPtr reserved;
+            private readonly IntPtr reserved;
         }
         const uint DIGCF_PRESENT = 0x02;
         const uint DIGCF_DEVICEINTERFACE = 0x10;
@@ -71,23 +71,20 @@ namespace Creative_SignalRGB_Bridge_Service
 
         protected override void OnStart(string[] args)
         {
-            Task.Run(() => start());
+            Task.Run(() => Start());
             
         }
 
         protected override void OnStop()
         {
-            if (listener != null)
-            {
-                listener.Close();
-            }
+            listener?.Close();
         }
 
-        private void start()
+        private void Start()
         {
             //System.Diagnostics.Debugger.Launch();
 
-            if (discoverDevice())
+            if (DiscoverDevice())
             {
                 listener = new UdpClient(ListenPort);
                 IPEndPoint groupEP = new IPEndPoint(IPAddress.Broadcast, ListenPort);
@@ -104,7 +101,7 @@ namespace Creative_SignalRGB_Bridge_Service
             }
         }
 
-        private bool discoverDevice()
+        private bool DiscoverDevice()
         {
             //TODO: Add support for more devices than just the AE-5
             Guid deviceInterfaceClassGuid = new Guid("c37acb87-d563-4aa0-b761-996e7864af79"); //Unknown if the Interface Class GUID is unique to AE-5.
@@ -143,7 +140,7 @@ namespace Creative_SignalRGB_Bridge_Service
             return false;
         }
 
-        private bool openDevice(string devicePath)
+        private bool OpenDevice(string devicePath)
         {
             deviceHandle = CreateFile(devicePath, 0xc0000000, 0x00000003, IntPtr.Zero, 0x00000003, 0, IntPtr.Zero);
             if (deviceHandle.IsInvalid)
@@ -166,13 +163,12 @@ namespace Creative_SignalRGB_Bridge_Service
             return true;
         }
 
-        private void sendCommand(byte[] nInputBuffer)
+        private void SendCommand(byte[] nInputBuffer)
         {
             uint IOCTL_CODE = 0x77772400; // Believed to be the set RGB Code
             uint nInBufferSize = 1044;
             Marshal.Copy(nInputBuffer, 0, lpInBuffer, nInputBuffer.Length);
-            uint bytesReturned;
-            bool result = DeviceIoControl(deviceHandle, IOCTL_CODE, lpInBuffer, nInBufferSize, lpOutBuffer, 1044, out bytesReturned, IntPtr.Zero);
+            DeviceIoControl(deviceHandle, IOCTL_CODE, lpInBuffer, nInBufferSize, lpOutBuffer, 1044, out uint bytesReturned, IntPtr.Zero);
         }
 
         private void HandleReceivedMessage(byte[] udpMessage)
@@ -191,7 +187,7 @@ namespace Creative_SignalRGB_Bridge_Service
             }
             if (deviceHandle == null)
             {
-                openDevice(devicePath);
+                OpenDevice(devicePath);
             }
 
             try
@@ -200,7 +196,7 @@ namespace Creative_SignalRGB_Bridge_Service
                 if (bytes.Length == 1044 && bytes[0] == 3)
                 {
                     //Debug.WriteLine("BUFFER!");
-                    sendCommand(bytes);
+                    SendCommand(bytes);
                 }
             } catch { }
         }
