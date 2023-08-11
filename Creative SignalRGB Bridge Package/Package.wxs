@@ -24,11 +24,13 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
     <Package Name="$(Name)"
         Manufacturer="Prismo"
-        Version="!(bind.fileVersion.CreativeSignalRGBBridge)"
+        Version="V1.0.0.0"
         UpgradeCode="c04a0f76-b793-4ab0-80c7-d37943f19888"
         Compressed="true">
 
-        <MajorUpgrade DowngradeErrorMessage="!(loc.DowngradeError)" />
+		<MediaTemplate EmbedCab="yes" />
+
+		<MajorUpgrade DowngradeErrorMessage="!(loc.DowngradeError)" />
 
         <StandardDirectory Id="ProgramFiles6432Folder">
             <Directory Id="INSTALLFOLDER" Name="!(bind.Property.ProductName)" />
@@ -57,26 +59,29 @@
         <DirectoryRef Id="INSTALLFOLDER">
             <Component Id="ServiceExecutable" Bitness="always64">
 
-                <File Id="CreativeSignalRGBBridge"
+                <File Id="CreativeSignalRGBBridgeFile"
                         Source="$(var.Creative_SignalRGB_Bridge_Service.TargetDir)Creative SignalRGB Bridge.exe"
                         KeyPath="true" />
 
-                <RemoveFile Id="ALLFILES" Name="*.*" On="both" />
+                
 
-                <ServiceInstall Id="ServiceInstaller"
+                <ServiceInstall Id="CreativeSignalRGBBridgeService"
                                 Type="ownProcess"
                                 Name="Creative SignalRGB Bridge"
                                 DisplayName="$(Name)"
-                                Description="Allows a SignalRGB to control the RGB Leds on some creative PCIE devices"
+                                Description="Allows SignalRGB to control the RGB Leds on some creative PCIE devices"
                                 Start="auto"
                                 ErrorControl="normal" />
 
-                <ServiceControl Id="StartService"
+                <ServiceControl Id="CreativeSignalRGBBridgeService"
                                 Start="install"
                                 Stop="both"
                                 Remove="uninstall"
                                 Name="Creative SignalRGB Bridge"
                                 Wait="true" />
+				
+				<RemoveFile Id="ALLFILES" Name="*.*" On="both" />
+				<RemoveFile Id="CreativeSignalRGBBridgeFile" Name="CreativeSignalRGBBridge" On="uninstall" />
             </Component>
         </DirectoryRef>
 
