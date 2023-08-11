@@ -5,6 +5,7 @@ using System.Net.Sockets;
 using Microsoft.Win32.SafeHandles;
 using System.Runtime.InteropServices;
 using System.Net;
+using System.Threading.Tasks;
 
 namespace Creative_SignalRGB_Bridge_Service
 {
@@ -54,21 +55,7 @@ namespace Creative_SignalRGB_Bridge_Service
 
         protected override void OnStart(string[] args)
         {
-            //System.Diagnostics.Debugger.Launch();
-         
-            if (discoverDevice())
-            {
-                listener = new UdpClient(ListenPort);
-                IPEndPoint groupEP = new IPEndPoint(IPAddress.Broadcast, ListenPort);
-                
-                while (true) {
-                    HandleReceivedMessage(listener.Receive(ref groupEP));
-                }
-
-            } else
-            {
-                Stop();
-            }
+            Task.Run(() => start());
             
         }
 
@@ -77,6 +64,27 @@ namespace Creative_SignalRGB_Bridge_Service
             if (listener != null)
             {
                 listener.Close();
+            }
+        }
+
+        private void start()
+        {
+            //System.Diagnostics.Debugger.Launch();
+
+            if (discoverDevice())
+            {
+                listener = new UdpClient(ListenPort);
+                IPEndPoint groupEP = new IPEndPoint(IPAddress.Broadcast, ListenPort);
+
+                while (true)
+                {
+                    HandleReceivedMessage(listener.Receive(ref groupEP));
+                }
+
+            }
+            else
+            {
+                Stop();
             }
         }
 
