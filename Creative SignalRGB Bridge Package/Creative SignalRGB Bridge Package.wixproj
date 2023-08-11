@@ -1,10 +1,18 @@
 ﻿<Project Sdk="WixToolset.Sdk/4.0.0">
   <PropertyGroup>
     <OutputName>Creative SignalRGB Bridge Installer</OutputName>
+    <OutputType>Package</OutputType>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <SuppressValidation>false</SuppressValidation>
     <SuppressIces>ICE64</SuppressIces>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <SuppressIces>ICE64</SuppressIces>
+    <DefineConstants>Debug</DefineConstants>
+    <SuppressAllWarnings>false</SuppressAllWarnings>
+    <Pedantic>true</Pedantic>
+    <VerboseOutput>true</VerboseOutput>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Creative SignalRGB Bridge Service\Creative SignalRGB Bridge Service.csproj" />
