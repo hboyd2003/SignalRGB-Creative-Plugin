@@ -2,7 +2,11 @@
   <PropertyGroup>
     <OutputName>Creative SignalRGB Bridge Installer</OutputName>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <SuppressValidation>false</SuppressValidation>
+    <SuppressIces>ICE64</SuppressIces>
+  </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Creative SignalRGB Bridge\Creative SignalRGB Bridge Service.csproj" />
+    <ProjectReference Include="..\Creative SignalRGB Bridge Service\Creative SignalRGB Bridge Service.csproj" />
   </ItemGroup>
 </Project>

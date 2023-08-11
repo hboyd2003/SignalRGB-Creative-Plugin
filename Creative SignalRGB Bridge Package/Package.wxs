@@ -3,48 +3,67 @@
 <?define Name = "Creative SignalRGB Bridge" ?>
 
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
-	<Package Name="$(Name)"
-		Manufacturer="Prismo"
-		Version="!(bind.fileVersion.CreativeSignalRGBBridge)"
-		UpgradeCode="c04a0f76-b793-4ab0-80c7-d37943f19888"
-		Compressed="true">
-	<MajorUpgrade DowngradeErrorMessage="!(loc.DowngradeError)" />
+    <Package Name="$(Name)"
+        Manufacturer="Prismo"
+        Version="!(bind.fileVersion.CreativeSignalRGBBridge)"
+        UpgradeCode="c04a0f76-b793-4ab0-80c7-d37943f19888"
+        Compressed="true">
 
-	<StandardDirectory Id="ProgramFiles6432Folder">
-		<Directory Id="INSTALLFOLDER" Name="!(bind.Property.ProductName)" />
-	</StandardDirectory>
+        <MajorUpgrade DowngradeErrorMessage="!(loc.DowngradeError)" />
 
+        <StandardDirectory Id="ProgramFiles6432Folder">
+            <Directory Id="INSTALLFOLDER" Name="!(bind.Property.ProductName)" />
+        </StandardDirectory>
 
-	<DirectoryRef Id="INSTALLFOLDER">
+        <!-- Reference to Documents Folder -->
+		<StandardDirectory Id="PersonalFolder">
+			<Directory Id="WhirlwindFXFolder" Name="WhirlwindFX">
+				<Directory Id="PluginsFolder" Name="Plugins">
+					<Directory Id="BridgeFolder" Name="Creative PCIE Bridge">
+						<Component Id="BridgeFiles" Guid="d02b0aac-055c-40f8-9384-7d55333fe21c" Directory="BridgeFolder">
+							<File Id="BridgeJsFile" Source="$(var.Creative_SignalRGB_Bridge_Service.TargetDir)Creative PCIE Bridge.js" />
+							<File Id="BridgeQmlFile" Source="$(var.Creative_SignalRGB_Bridge_Service.TargetDir)Creative PCIE Bridge.qml" />
+							<RegistryValue Root="HKCU" Key="Software\Creative SignalRGB Bridge" Name="installed" Type="integer" Value="1" KeyPath="yes" />
 
-		<Component Id="ServiceExecutable" Bitness="always64">
+							<!-- These are to suppress the RemoveFile errors -->
+							<RemoveFile Id="RemoveBridgeJsFile" Name="Creative PCIE Bridge.js" On="uninstall" />
+							<RemoveFile Id="RemoveBridgeQmlFile" Name="Creative PCIE Bridge.qml" On="uninstall" />
+							<RemoveFolder Id="RemovePluginFolder" Directory="BridgeFolder" On="uninstall" />
+						</Component>
+					</Directory>
+				</Directory>
+			</Directory>
+		</StandardDirectory>
+		
+        <DirectoryRef Id="INSTALLFOLDER">
+            <Component Id="ServiceExecutable" Bitness="always64">
 
-			<File Id="CreativeSignalRGBBridge"
-                    Source="$(var.Creative_SignalRGB_Bridge_Service.TargetDir)Creative SignalRGB Bridge.exe"
-                    KeyPath="true" />
+                <File Id="CreativeSignalRGBBridge"
+                        Source="$(var.Creative_SignalRGB_Bridge_Service.TargetDir)Creative SignalRGB Bridge.exe"
+                        KeyPath="true" />
 
-			<RemoveFile Id="ALLFILES" Name="*.*" On="both" />
+                <RemoveFile Id="ALLFILES" Name="*.*" On="both" />
 
-			<ServiceInstall Id="ServiceInstaller"
-                            Type="ownProcess"
-                            Name="Creative SignalRGB Bridge"
-                            DisplayName="$(Name)"
-                            Description="Allows a SignalRGB to control the RGB Leds on some creative PCIE devices"
-                            Start="auto"
-                            ErrorControl="normal" />
+                <ServiceInstall Id="ServiceInstaller"
+                                Type="ownProcess"
+                                Name="Creative SignalRGB Bridge"
+                                DisplayName="$(Name)"
+                                Description="Allows a SignalRGB to control the RGB Leds on some creative PCIE devices"
+                                Start="auto"
+                                ErrorControl="normal" />
 
-			<ServiceControl Id="StartService"
-                            Start="install"
-                            Stop="both"
-                            Remove="uninstall"
-                            Name="Creative SignalRGB Bridge"
-                            Wait="true" />
-		</Component>
-	</DirectoryRef>
+                <ServiceControl Id="StartService"
+                                Start="install"
+                                Stop="both"
+                                Remove="uninstall"
+                                Name="Creative SignalRGB Bridge"
+                                Wait="true" />
+            </Component>
+        </DirectoryRef>
 
-	<Feature Id="Service" Title="Creative SignalRGB Bridge" Level="1">
-		<ComponentRef Id="ServiceExecutable" />
-	</Feature>
-	  
-	</Package>
+        <Feature Id="Service" Title="Creative SignalRGB Bridge" Level="1">
+            <ComponentRef Id="ServiceExecutable" />
+            <ComponentRef Id="BridgeFiles" />
+        </Feature>
+    </Package>
 </Wix>
