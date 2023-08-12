@@ -76,7 +76,7 @@ export function DiscoveryService() {
 	this.UdpBroadcastAddress = "127.0.0.1";
 
 	this.timeSinceLastReq = 0;
-
+	this.discovered = false;
 
 	this.Retries = 5;
 	this.RetryCount = 0;
@@ -86,13 +86,15 @@ export function DiscoveryService() {
 	};
 
 	this.Update = function() {
-		if (this.timeSinceLastReq <= 0 && this.RetryCount < this.Retries) {
-			service.log("Contacting Service for the " + this.RetryCount + " time");
-			service.broadcast("LIST DEVICES \r\n");
-			this.timeSinceLastReq = 60;
-			this.RetryCount++;
-		} else {
-			service.log("Unable to contact the Creative SignalRGB Bridge Service after five attempts. Is it installed and running?")
+		if (!this.discovered) {
+			if (this.timeSinceLastReq <= 0 && this.RetryCount < this.Retries) {
+				service.log("Contacting Service for the " + this.RetryCount + " time");
+				service.broadcast("LIST DEVICES \r\n");
+				this.timeSinceLastReq = 60;
+				this.RetryCount++;
+			} else {
+				service.log("Unable to contact the Creative SignalRGB Bridge Service after five attempts. Is it installed and running?")
+			}
 		}
 
 		this.timeSinceLastReq--;
@@ -101,7 +103,7 @@ export function DiscoveryService() {
 	this.ResponseStringToObj = function(sResponse) {
 		const response = {};
 		const sResp = sResponse.toString().split("\r\n");
-		service.log("OBJ: "+JSON.stringify(sResponse));
+
 		for(const sLine of sResp){
 			const vPair = sLine.split("=");
 
@@ -117,6 +119,7 @@ export function DiscoveryService() {
 		// Convert response to object.
 		const response = this.ResponseStringToObj(value.response);
 		service.log("Received response from service: "+ value.response);
+		this.discovered = true;
 
 		const bIsSoundblaster = value.response == "Soundblaster AE-5";
 
