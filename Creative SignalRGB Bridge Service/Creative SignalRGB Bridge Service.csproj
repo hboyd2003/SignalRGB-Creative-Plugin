@@ -123,7 +123,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <PostBuildEvent>copy /Y "$(SolutionDir)\Creative PCIE Bridge.js" "$(TargetDir)\Creative PCIE Bridge.js"
-copy /Y "$(SolutionDir)\Creative PCIE Bridge.js" "$(TargetDir)\Creative PCIE Bridge.qml"</PostBuildEvent>
+copy /Y "$(SolutionDir)\Creative PCIE Bridge.qml" "$(TargetDir)\Creative PCIE Bridge.qml"</PostBuildEvent>
   </PropertyGroup>
   <Target Name="PostBuildMacros">
     <GetAssemblyIdentity AssemblyFiles="$(TargetPath)">
