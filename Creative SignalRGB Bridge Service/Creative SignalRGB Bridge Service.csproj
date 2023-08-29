@@ -89,6 +89,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ICreativeDevice.cs" />
     <Compile Include="Creative_SignalRGB_Bridge_Service.cs">
       <SubType>Component</SubType>
     </Compile>
