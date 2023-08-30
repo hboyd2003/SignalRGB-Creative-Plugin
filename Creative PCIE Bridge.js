@@ -118,7 +118,7 @@ export function DiscoveryService() {
 		service.log("Received response from service: "+ value.response);
 		this.discovered = true;
 
-		const bIsSoundblaster = value.response == "Soundblaster AE-5";
+		const bIsSoundblaster = value.response == "SoundblasterX AE-5";
 
 		if (bIsSoundblaster) {
 			service.log("Found " + value.response + " adding!")
@@ -126,6 +126,7 @@ export function DiscoveryService() {
 
 			if (controller === undefined) {
 				// Create and add new controller.
+				//udp.send(streamingAddress, streamingPort, "Init " + value.response);
 				const cont = new CreativePCIEBridge(value);
 				service.addController(cont);
 

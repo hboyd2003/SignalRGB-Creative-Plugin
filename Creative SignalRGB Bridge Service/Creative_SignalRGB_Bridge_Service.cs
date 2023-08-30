@@ -100,11 +100,9 @@ namespace Creative_SignalRGB_Bridge_Service
         }
 
         private bool DiscoverDevices()
-        { 
+        {
             // ReSharper disable once InconsistentNaming
-            var discoverAE5 = ae5.DiscoverDeviceAsync(); 
-            discoverAE5.Start(); 
-            return discoverAE5.Result;
+            return ae5.DiscoverDeviceAsync().Result; 
         }
 
 
@@ -121,13 +119,12 @@ namespace Creative_SignalRGB_Bridge_Service
                 var responseData = Encoding.UTF8.GetBytes(responseMessage);
                 var loopback = new IPEndPoint(IPAddress.Loopback, 12347);
                 listener.Send(responseData, responseData.Length, loopback);
-            }
-            
 
-            if (message.Trim().StartsWith("Init " + ae5.DeviceName))
-            {
-                _ = ae5.ConnectToDevice();
-            } else if (message.Trim().StartsWith("Set RGB" + ae5.DeviceName))
+                if (!ae5.DeviceConnected)
+                {
+                    _ = ae5.ConnectToDevice();
+                } 
+            } else
             {
                 if (!ae5.DeviceConnected)
                 {
