@@ -20,8 +20,6 @@ namespace Creative_SignalRGB_Bridge_Service
 
         Task<bool> SendCommand(byte[] command);
 
-        Task<bool> SetColors(byte[][] colors);
-
-
+        Task<bool> ConnectToDevice();
     }
 }

@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.ServiceProcess;
 using System.Text;
 using System.Net.Sockets;
@@ -43,6 +44,8 @@ namespace Creative_SignalRGB_Bridge_Service
         static extern bool SetupDiGetDeviceInterfaceDetail(IntPtr hDevInfo, ref SP_DEVICE_INTERFACE_DATA deviceInterfaceData, IntPtr deviceInterfaceDetailData, uint deviceInterfaceDetailDataSize, ref uint requiredSize, IntPtr deviceInfoData);
 
         [StructLayout(LayoutKind.Sequential)]
+        [SuppressMessage("ReSharper", "MemberCanBePrivate.Local")]
+        [SuppressMessage("ReSharper", "FieldCanBeMadeReadOnly.Local")]
         struct SP_DEVICE_INTERFACE_DATA
         {
             public int cbSize;
@@ -57,11 +60,8 @@ namespace Creative_SignalRGB_Bridge_Service
         private const int ListenPort = 12346; 
         private const string SearchMessage = "LIST DEVICES";
         private UdpClient listener = null;
-        private string devicePath;
-        SafeFileHandle deviceHandle = null;
-        
-        IntPtr lpInBuffer;
-        IntPtr lpOutBuffer;
+
+        private AE5_Device ae5;
 
 
         public Creative_SignalRGB_Bridge_Service()
@@ -84,121 +84,63 @@ namespace Creative_SignalRGB_Bridge_Service
         {
             //System.Diagnostics.Debugger.Launch();
 
-            if (DiscoverDevice())
+            ae5 = new AE5_Device();
+            if (!DiscoverDevices())
             {
-                listener = new UdpClient(ListenPort);
-                IPEndPoint groupEP = new IPEndPoint(IPAddress.Broadcast, ListenPort);
-
-                while (true)
-                {
-                    HandleReceivedMessage(listener.Receive(ref groupEP));
-                }
-
+                return;
             }
-            else
+
+            listener = new UdpClient(ListenPort);
+            IPEndPoint groupEP = new IPEndPoint(IPAddress.Broadcast, ListenPort);
+
+            while (true)
             {
-                Stop();
+                HandleReceivedMessage(listener.Receive(ref groupEP));
             }
         }
 
-        private bool DiscoverDevice()
-        {
-            //TODO: Add support for more devices than just the AE-5
-            Guid deviceInterfaceClassGuid = new Guid("c37acb87-d563-4aa0-b761-996e7864af79"); //Unknown if the Interface Class GUID is unique to AE-5.
-
-            IntPtr deviceInfoSet = SetupDiGetClassDevs(ref deviceInterfaceClassGuid, IntPtr.Zero, IntPtr.Zero, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
-            if (deviceInfoSet != IntPtr.Zero)
-            {
-                SP_DEVICE_INTERFACE_DATA deviceInterfaceData = new SP_DEVICE_INTERFACE_DATA();
-                deviceInterfaceData.cbSize = Marshal.SizeOf(deviceInterfaceData);
-
-                if (SetupDiEnumDeviceInterfaces(deviceInfoSet, IntPtr.Zero, ref deviceInterfaceClassGuid, 0, ref deviceInterfaceData))
-                {
-                    uint requiredSize = 0;
-                    SetupDiGetDeviceInterfaceDetail(deviceInfoSet, ref deviceInterfaceData, IntPtr.Zero, 0, ref requiredSize, IntPtr.Zero);
-
-                    IntPtr detailDataBuffer = Marshal.AllocHGlobal((int)requiredSize);
-
-                    Marshal.WriteInt32(detailDataBuffer, (IntPtr.Size == 4) ? (4 + Marshal.SystemDefaultCharSize) : 8);
-
-                    if (SetupDiGetDeviceInterfaceDetail(deviceInfoSet, ref deviceInterfaceData, detailDataBuffer, requiredSize, ref requiredSize, IntPtr.Zero))
-                    {
-                        IntPtr pDevicePathName = new IntPtr(detailDataBuffer.ToInt64() + 4);
-                        string devicePath = Marshal.PtrToStringAuto(pDevicePathName);
-
-
-                        //Debug.WriteLine("Device path: " + devicePath);
-                        this.devicePath = devicePath;
-                        return true;
-                        //openDevice(devicePath);
-                    }
-            
-
-                    Marshal.FreeHGlobal(detailDataBuffer);
-                }
-            }
-            return false;
+        private bool DiscoverDevices()
+        { 
+            // ReSharper disable once InconsistentNaming
+            var discoverAE5 = ae5.DiscoverDeviceAsync(); 
+            discoverAE5.Start(); 
+            return discoverAE5.Result;
         }
 
-        private bool OpenDevice(string devicePath)
-        {
-            deviceHandle = CreateFile(devicePath, 0xc0000000, 0x00000003, IntPtr.Zero, 0x00000003, 0, IntPtr.Zero);
-            if (deviceHandle.IsInvalid)
-            {
-                //Send out error
-                return false;
-            }
-            //Create buffers
-           
-            byte[] nInputBuffer = new byte[1044];
-            GCHandle inputHandle = GCHandle.Alloc(nInputBuffer, GCHandleType.Pinned);
-            this.lpInBuffer = inputHandle.AddrOfPinnedObject();
-            //Marshal.Copy(nInputBuffer, 0, lpInBuffer, nInputBuffer.Length);
-
-            byte[] nOutBuffer = new byte[1044];
-            GCHandle outputHandle = GCHandle.Alloc(nOutBuffer, GCHandleType.Pinned);
-            this.lpOutBuffer = outputHandle.AddrOfPinnedObject();
-            Marshal.Copy(lpOutBuffer, nOutBuffer, 0, nOutBuffer.Length);
-
-            return true;
-        }
-
-        private void SendCommand(byte[] nInputBuffer)
-        {
-            uint IOCTL_CODE = 0x77772400; // Believed to be the set RGB Code
-            uint nInBufferSize = 1044;
-            Marshal.Copy(nInputBuffer, 0, lpInBuffer, nInputBuffer.Length);
-            DeviceIoControl(deviceHandle, IOCTL_CODE, lpInBuffer, nInBufferSize, lpOutBuffer, 1044, out uint bytesReturned, IntPtr.Zero);
-        }
 
         private void HandleReceivedMessage(byte[] udpMessage)
         {
-            string message = Encoding.UTF8.GetString(udpMessage);
+            var message = Encoding.UTF8.GetString(udpMessage);
 
             //Debug.WriteLine("Recieved Message: " + bytes);
 
             if (message.Trim().Equals(SearchMessage))
             {
                 //Debug.WriteLine("Recieved Search Message");
-                string responseMessage = "Soundblaster AE-5";
-                byte[] responseData = Encoding.UTF8.GetBytes(responseMessage);
-                IPEndPoint loopback = new IPEndPoint(IPAddress.Loopback, 12347);
+                var responseMessage = ae5.DeviceName;   
+                var responseData = Encoding.UTF8.GetBytes(responseMessage);
+                var loopback = new IPEndPoint(IPAddress.Loopback, 12347);
                 listener.Send(responseData, responseData.Length, loopback);
             }
-            if (deviceHandle == null)
-            {
-                OpenDevice(devicePath);
-            }
+            
 
-            try
+            if (message.Trim().StartsWith("Init " + ae5.DeviceName))
             {
-                byte[] bytes = Convert.FromBase64String(message);
+                _ = ae5.ConnectToDevice();
+            } else if (message.Trim().StartsWith("Set RGB" + ae5.DeviceName))
+            {
+                if (!ae5.DeviceConnected)
+                {
+                    return;
+                }
+
+                var bytes = Convert.FromBase64String(message);
                 if (bytes.Length == 1044 && bytes[0] == 3)
                 {
                     //Debug.WriteLine("BUFFER!");
-                    SendCommand(bytes);
+                    _ = ae5.SendCommand(bytes);
                 }
-            } catch { }
+            }
         }
     }
 }
