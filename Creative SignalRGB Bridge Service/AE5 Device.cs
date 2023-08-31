@@ -88,10 +88,8 @@ public class AE5_Device : ICreativeDevice
             var devicePath = Marshal.PtrToStringAuto(pDevicePathName);
 
 
-            //Debug.WriteLine("Device path: " + devicePath);
             DevicePath = devicePath;
             return true;
-            //openDevice(devicePath);
         }
 
 
@@ -106,7 +104,7 @@ public class AE5_Device : ICreativeDevice
             return false;
         }
 
-        uint IOCTL_CODE = 0x77772400; // Believed to be the set RGB Code
+        uint IOCTL_CODE = 0x77772400; // Set RGB Command
         uint nInBufferSize = 1044;
         Marshal.Copy(command, 0, _lpInBuffer, command.Length);
         var success = DeviceIoControl(_deviceHandle, IOCTL_CODE, _lpInBuffer, nInBufferSize, _lpOutBuffer, 1044,

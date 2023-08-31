@@ -24,7 +24,7 @@ using Microsoft.Extensions.Logging.EventLog;
 IHostBuilder builder = Host.CreateDefaultBuilder(args)
     .UseWindowsService(options =>
     {
-        options.ServiceName = ".NET Joke Service";
+        options.ServiceName = "Creative SignalRGB Bridge";
     })
     .ConfigureServices((context, services) =>
     {
@@ -33,7 +33,6 @@ IHostBuilder builder = Host.CreateDefaultBuilder(args)
 
         _ = services.AddHostedService<CreativeSignalRGBBridgeService>();
 
-        // See: https://github.com/dotnet/runtime/issues/47303
         services.AddLogging(builder =>
         {
             builder.AddConfiguration(

@@ -14,50 +14,16 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>
 
-using System;
-using System.Diagnostics.CodeAnalysis;
-using System.ServiceProcess;
-using System.Text;
-using System.Net.Sockets;
-using Microsoft.Win32.SafeHandles;
-using System.Runtime.InteropServices;
-using System.Net;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
 
 namespace CreativeSignalRGBBridge;
 
 public partial class CreativeSignalRGBBridgeService : BackgroundService
 {
-    [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-    public static extern SafeFileHandle CreateFile(string lpFileName, uint dwDesiredAccess, uint dwShareMode, IntPtr lpSecurityAttributes, uint dwCreationDisposition, uint dwFlagsAndAttributes, IntPtr hTemplateFile);
-
-    [DllImport("kernel32.dll", SetLastError = true)]
-    static extern bool DeviceIoControl(SafeFileHandle hDevice, uint dwIoControlCode, IntPtr lpInBuffer, uint nInBufferSize, IntPtr lpOutBuffer, uint nOutBufferSize, out uint lpBytesReturned, IntPtr lpOverlapped);
-
-    [DllImport("setupapi.dll", CharSet = CharSet.Auto)]
-    static extern IntPtr SetupDiGetClassDevs(ref Guid ClassGuid, IntPtr Enumerator, IntPtr hwndParent, uint Flags);
-
-    [DllImport("setupapi.dll", CharSet = CharSet.Auto)]
-    static extern bool SetupDiEnumDeviceInterfaces(IntPtr hDevInfo, IntPtr devInfo, ref Guid interfaceClassGuid, uint memberIndex, ref SP_DEVICE_INTERFACE_DATA deviceInterfaceData);
-
-    [DllImport("setupapi.dll", CharSet = CharSet.Auto, SetLastError = true)]
-    static extern bool SetupDiGetDeviceInterfaceDetail(IntPtr hDevInfo, ref SP_DEVICE_INTERFACE_DATA deviceInterfaceData, IntPtr deviceInterfaceDetailData, uint deviceInterfaceDetailDataSize, ref uint requiredSize, IntPtr deviceInfoData);
-
-    [StructLayout(LayoutKind.Sequential)]
-    [SuppressMessage("ReSharper", "MemberCanBePrivate.Local")]
-    [SuppressMessage("ReSharper", "FieldCanBeMadeReadOnly.Local")]
-    struct SP_DEVICE_INTERFACE_DATA
-    {
-        public int cbSize;
-        public Guid interfaceClassGuid;
-        public int flags;
-        private readonly IntPtr reserved;
-    }
-    const uint DIGCF_PRESENT = 0x02;
-    const uint DIGCF_DEVICEINTERFACE = 0x10;
-
 
     private const int ListenPort = 12346; 
     private const string SearchMessage = "LIST DEVICES";
