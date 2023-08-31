@@ -60,10 +60,14 @@
      </PostBuildEventDependsOn>
   </PropertyGroup>
   <PropertyGroup>
-    <PostBuildEvent>copy /Y "$(SolutionDir)\Creative PCIE Bridge.js" "Creative PCIE Bridge.js"
-copy /Y "$(SolutionDir)\Creative PCIE Bridge.qml" "Creative PCIE Bridge.qml"</PostBuildEvent>
     <Nullable>enable</Nullable>
     <ProduceReferenceAssembly>False</ProduceReferenceAssembly>
+    <Title>Creative SignalRGB Bridge</Title>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/hboyd2003/SignalRGB-Creative-Plugin</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/hboyd2003/SignalRGB-Creative-Plugin</PackageProjectUrl>
+    <AssemblyVersion>1.1.0.0</AssemblyVersion>
+    <FileVersion>1.1.0.0</FileVersion>
   </PropertyGroup>
   <Target Name="PostBuildMacros">
     <GetAssemblyIdentity AssemblyFiles="$(TargetPath)">
