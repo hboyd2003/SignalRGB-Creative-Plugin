@@ -5,10 +5,10 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <SuppressValidation>false</SuppressValidation>
-    <SuppressIces>ICE64;ICE91</SuppressIces>
+    <SuppressIces>ICE64</SuppressIces>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <SuppressIces>ICE91</SuppressIces>
+    <SuppressIces>ICE64</SuppressIces>
     <DefineConstants>Debug</DefineConstants>
     <SuppressAllWarnings>false</SuppressAllWarnings>
     <Pedantic>true</Pedantic>

@@ -42,11 +42,10 @@
 				<Directory Id="PluginsFolder" Name="Plugins">
 					<Directory Id="BridgeFolder" Name="Creative PCIE Bridge">
 						<Component Id="BridgeFiles" Guid="d02b0aac-055c-40f8-9384-7d55333fe21c" Directory="BridgeFolder">
-							<File Id="BridgeJsFile" Source="$(var.Creative_SignalRGB_Bridge_Service.TargetDir)Creative PCIE Bridge.js" />
-							<File Id="BridgeQmlFile" Source="$(var.Creative_SignalRGB_Bridge_Service.TargetDir)Creative PCIE Bridge.qml" />
+							<File Id="BridgeJsFile" Source="$(var.SolutionDir)Creative PCIE Bridge.js" />
+							<File Id="BridgeQmlFile" Source="$(var.SolutionDir)Creative PCIE Bridge.qml" />
 							<RegistryValue Root="HKCU" Key="Software\Creative SignalRGB Bridge" Name="installed" Type="integer" Value="1" KeyPath="yes" />
 
-							<!-- These are to suppress the RemoveFile errors -->
 							<RemoveFile Id="RemoveBridgeJsFile" Name="Creative PCIE Bridge.js" On="uninstall" />
 							<RemoveFile Id="RemoveBridgeQmlFile" Name="Creative PCIE Bridge.qml" On="uninstall" />
 							<RemoveFolder Id="RemovePluginFolder" Directory="BridgeFolder" On="uninstall" />
@@ -60,7 +59,7 @@
             <Component Id="ServiceExecutable" Bitness="always64">
 
                 <File Id="CreativeSignalRGBBridgeFile"
-                        Source="$(var.Creative_SignalRGB_Bridge_Service.TargetDir)Creative SignalRGB Bridge.exe"
+                        Source="$(var.Creative_SignalRGB_Bridge_Service.TargetDir)publish\win-x64\Creative SignalRGB Bridge.exe"
                         KeyPath="true" />
 
                 

@@ -14,23 +14,32 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>
 
-using System.ServiceProcess;
+using CreativeSignalRGBBridge;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Configuration;
+using Microsoft.Extensions.Logging.EventLog;
 
-namespace Creative_SignalRGB_Bridge_Service
-{
-    internal static class Program
+IHostBuilder builder = Host.CreateDefaultBuilder(args)
+    .UseWindowsService(options =>
     {
-        /// <summary>
-        /// The main entry point for the application.
-        /// </summary>
-        static void Main()
+        options.ServiceName = ".NET Joke Service";
+    })
+    .ConfigureServices((context, services) =>
+    {
+        LoggerProviderOptions.RegisterProviderOptions<
+            EventLogSettings, EventLogLoggerProvider>(services);
+
+        _ = services.AddHostedService<CreativeSignalRGBBridgeService>();
+
+        // See: https://github.com/dotnet/runtime/issues/47303
+        services.AddLogging(builder =>
         {
-            ServiceBase[] ServicesToRun;
-            ServicesToRun = new ServiceBase[]
-            {
-                new Creative_SignalRGB_Bridge_Service()
-            };
-            ServiceBase.Run(ServicesToRun);
-        }
-    }
-}
+            builder.AddConfiguration(
+                context.Configuration.GetSection("Logging"));
+        });
+    });
+
+IHost host = builder.Build();
+host.Run();
