@@ -58,7 +58,7 @@ Item {
                 }
             }
         }
-        Column{
+        Column {
             width: parent.width
             height: parent.height
 
@@ -66,14 +66,13 @@ Item {
                 model: service.controllers
                 delegate: Item {
                                 width: 325
-                                height: 170
+                                height: 200
                                 Rectangle {
                                     width: parent.width
                                     height: parent.height - 10
                                     color: "#2d2f31"
                                     radius: 5
                                 }
-
                                 Column {
                                     anchors.verticalCenter: parent.verticalCenter
                                     width: parent.width
@@ -81,14 +80,14 @@ Item {
                                     Image {
                                         id: logo
                                         width: parent.width - 20
-                                        source: "https://img.creative.com/soundblaster/blasterx/images/logo_ae5pe.png"
+                                        source: model.modelData.obj.logoURL
                                         fillMode: Image.PreserveAspectFit
                                         antialiasing: true
                                         mipmap: true
                                         anchors.horizontalCenter: parent.horizontalCenter
                                         clip: false
                                     }
-                                    Text{
+                                    Text {
                                         color: "#FFFFFF"
                                         text: model.modelData.obj.name
                                         font.pixelSize: 20
@@ -96,9 +95,16 @@ Item {
                                         font.bold: true
                                         leftPadding: 15
                                     }
-                                    Text{
+                                    Text {
                                         color: "#FFFFFF"
-                                        text: "Id: " + model.modelData.obj.id
+                                        text: "IP: " + model.modelData.obj.ip
+                                        font.family: "Montserrat"
+                                        font.pixelSize: 13
+                                        leftPadding: 15
+                                    }
+                                    Text {
+                                        color: "#FFFFFF"
+                                        text: "Location ID: " + model.modelData.obj.id
                                         font.family: "Montserrat"
                                         font.pixelSize: 13
                                         leftPadding: 15

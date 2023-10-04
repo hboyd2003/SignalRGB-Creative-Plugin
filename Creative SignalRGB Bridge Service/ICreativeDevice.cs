@@ -2,11 +2,6 @@
 
 public interface ICreativeDevice
 {
-    string DevicePath
-    {
-        get;
-    }
-
     string DeviceName
     {
         get;
@@ -17,7 +12,15 @@ public interface ICreativeDevice
         get;
     }
 
-    Task<bool> DiscoverDeviceAsync();
+    bool DeviceFound
+    {
+        get;
+    }
+
+    string? DeviceId
+    {
+        get;
+    }
 
     Task<bool> SendCommand(byte[] command);
 

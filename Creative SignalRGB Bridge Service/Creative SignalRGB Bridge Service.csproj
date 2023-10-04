@@ -66,8 +66,11 @@
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/hboyd2003/SignalRGB-Creative-Plugin</RepositoryUrl>
     <PackageProjectUrl>https://github.com/hboyd2003/SignalRGB-Creative-Plugin</PackageProjectUrl>
-    <AssemblyVersion>1.1.0.0</AssemblyVersion>
-    <FileVersion>1.1.0.0</FileVersion>
+    <AssemblyVersion>2.0.0.0</AssemblyVersion>
+    <FileVersion>2.0.0.0</FileVersion>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+	<PlatformName>windows</PlatformName>
+    <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
   </PropertyGroup>
   <Target Name="PostBuildMacros">
     <GetAssemblyIdentity AssemblyFiles="$(TargetPath)">

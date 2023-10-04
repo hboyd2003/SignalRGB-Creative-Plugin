@@ -1,49 +1,26 @@
 ﻿using System.Runtime.InteropServices;
+using Windows.Gaming.Input.Custom;
 using Microsoft.Win32.SafeHandles;
+using Microsoft.Extensions.Logging;
+using Windows.Devices.Enumeration;
+using System.Security.Cryptography;
+using Windows.Devices.Custom;
+using Windows.Devices.SerialCommunication;
+using Windows.Storage.Streams;
+using Buffer = Windows.Storage.Streams.Buffer;
+using Windows.Security.Cryptography;
 
 namespace CreativeSignalRGBBridge;
     // ReSharper disable once InconsistentNaming
 public class AE5_Device : ICreativeDevice
 {
-    [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-    private static extern SafeFileHandle CreateFile(string lpFileName, uint dwDesiredAccess, uint dwShareMode, IntPtr lpSecurityAttributes, uint dwCreationDisposition, uint dwFlagsAndAttributes, IntPtr hTemplateFile);
-
-    [DllImport("kernel32.dll", SetLastError = true)]
-    private static extern bool DeviceIoControl(SafeFileHandle hDevice, uint dwIoControlCode, IntPtr lpInBuffer, uint nInBufferSize, IntPtr lpOutBuffer, uint nOutBufferSize, out uint lpBytesReturned, IntPtr lpOverlapped);
-
-    [DllImport("setupapi.dll", CharSet = CharSet.Auto)]
-    private static extern IntPtr SetupDiGetClassDevs(ref Guid ClassGuid, IntPtr Enumerator, IntPtr hwndParent, uint Flags);
-
-    [DllImport("setupapi.dll", CharSet = CharSet.Auto)]
-    private static extern bool SetupDiEnumDeviceInterfaces(IntPtr hDevInfo, IntPtr devInfo, ref Guid interfaceClassGuid, uint memberIndex, ref SP_DEVICE_INTERFACE_DATA deviceInterfaceData);
-
-    [DllImport("setupapi.dll", CharSet = CharSet.Auto, SetLastError = true)]
-    private static extern bool SetupDiGetDeviceInterfaceDetail(IntPtr hDevInfo, ref SP_DEVICE_INTERFACE_DATA deviceInterfaceData, IntPtr deviceInterfaceDetailData, uint deviceInterfaceDetailDataSize, ref uint requiredSize, IntPtr deviceInfoData);
-
-    [StructLayout(LayoutKind.Sequential)]
-    // ReSharper disable once InconsistentNaming
-    private struct SP_DEVICE_INTERFACE_DATA
-    {
-        public int cbSize;
-        public Guid interfaceClassGuid;
-        public int flags;
-        private readonly IntPtr reserved;
-    }
-
-    const uint DIGCF_PRESENT = 0x02;
-    const uint DIGCF_DEVICEINTERFACE = 0x10;
+    private CustomDevice? _device = null;
+    private static readonly Guid interfaceGUID = new("{c37acb87-d563-4aa0-b761-996e7864af79}");
+    private static readonly string DeviceSelector = CustomDevice.GetDeviceSelector(interfaceGUID);
+    private DeviceWatcher _deviceWatcher;
 
 
-    private SafeFileHandle _deviceHandle = null;
-    private IntPtr _lpInBuffer;
-    private IntPtr _lpOutBuffer;
-
-    public string DevicePath
-    {
-        get;
-        private set;
-    }
-
+    //TODO: Get the AE-5's actual display name
     public string DeviceName
     {
         get;
@@ -56,86 +33,163 @@ public class AE5_Device : ICreativeDevice
         private set;
     }
 
-    public async Task<bool> DiscoverDeviceAsync()
+    public bool DeviceFound
     {
-        var deviceInterfaceClassGuid = new Guid("c37acb87-d563-4aa0-b761-996e7864af79"); //Unknown if the Interface Class GUID is unique to AE-5.
+        get;
+        private set;
+    }
 
-        var deviceInfoSet = SetupDiGetClassDevs(ref deviceInterfaceClassGuid, IntPtr.Zero, IntPtr.Zero, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
-        if (deviceInfoSet == IntPtr.Zero)
+    public string? DeviceId
+    {
+        get;
+        private set;
+    }
+
+    public ILogger<CreativeSignalRGBBridgeService>? Logger
+    {
+        get;
+        set;
+    }
+
+    public AE5_Device()
+    {
+        _deviceWatcher = DeviceInformation.CreateWatcher(DeviceSelector);
+        _deviceWatcher.Added += DeviceAddedEvent;
+        _deviceWatcher.Removed += DeviceRemovedEvent;
+        _deviceWatcher.Start();
+    }
+
+    // Needed as the second custom flag needs to be set to one and the IOControlCode constructor can't
+    // See https://learn.microsoft.com/en-us/windows-hardware/drivers/kernel/defining-i-o-control-codes
+    private class IOCTLControlCode : IIOControlCode
+    {
+        IOControlAccessMode IIOControlCode.AccessMode
+        {
+            get;
+        } = IOControlAccessMode.ReadWrite;
+
+
+        public IOControlBufferingMethod BufferingMethod
+        {
+            get;
+        } = IOControlBufferingMethod.Buffered;
+
+        public uint ControlCode
+        {
+            get;
+        } = 0x77772400;
+
+        public ushort DeviceType
+        {
+            get;
+        } = 0x7777;
+
+        public ushort Function
+        {
+            get;
+        } = 0x100;
+    }
+
+    // TODO: Proper async for AE5's DeviceAddedEvent
+    private async void DeviceAddedEvent(DeviceWatcher sender, DeviceInformation deviceInfo)
+    {
+        Logger?.LogError("Device Found!");
+        if (!DeviceConnected && !DeviceFound)
+        {
+            DeviceFound = true;
+            DeviceId = deviceInfo.Id;
+        }
+
+    }
+
+    // TODO: Proper async for AE5's DeviceRemovedEvent
+    private async void DeviceRemovedEvent(DeviceWatcher sender, DeviceInformationUpdate deviceInfo)
+    {
+        Logger?.LogError("Device Removed!");
+        if (deviceInfo.Id != DeviceId)
+        {
+            return;
+        }
+
+        if (DeviceFound && deviceInfo.Id == DeviceId)
+        {
+            DeviceId = null;
+            DeviceFound = false;
+        }
+
+        if (DeviceConnected)
+        {
+            //DisconnectFromDevice();
+        }
+    }
+
+    // TODO: Proper async for AE5's SendCommand
+    public async Task<bool> SendCommand(byte[] command)
+    {
+        if (DeviceId == null || !DeviceFound || !DeviceConnected || _device == null)
+        {
+            return false;
+        }
+        //Logger?.LogError("Sending Command!");
+        var inputBuffer = CryptographicBuffer.CreateFromByteArray(command);
+        var outputBuffer = new Buffer(1044);
+        uint success;
+        try
+        {
+            success = await _device.SendIOControlAsync(new IOCTLControlCode(), inputBuffer, outputBuffer);
+        }
+        catch (Exception)
+        {
+            Logger?.LogError("Error sending command disconnecting!");
+            DisconnectFromDevice();
+            return false;
+        }
+        //Logger?.LogError("Sent command!");
+        return success == 0;
+
+    }
+
+    // TODO: Proper async for AE5's ConnectToDevice
+    public async Task<bool> ConnectToDevice()
+    {
+        Logger?.LogError("Connecting to the Device!");
+        if (DeviceId == null || !DeviceFound || DeviceConnected)
         {
             return false;
         }
 
-        var deviceInterfaceData = new SP_DEVICE_INTERFACE_DATA();
-        deviceInterfaceData.cbSize = Marshal.SizeOf(deviceInterfaceData);
-
-        if (!SetupDiEnumDeviceInterfaces(deviceInfoSet, IntPtr.Zero, ref deviceInterfaceClassGuid, 0,
-                ref deviceInterfaceData))
+        try
+        {
+            _device = await CustomDevice.FromIdAsync(DeviceId, DeviceAccessMode.ReadWrite, DeviceSharingMode.Shared);
+        }
+        catch (Exception)
         {
             return false;
         }
 
-        uint requiredSize = 0;
-        SetupDiGetDeviceInterfaceDetail(deviceInfoSet, ref deviceInterfaceData, IntPtr.Zero, 0, ref requiredSize, IntPtr.Zero);
+        DeviceConnected = true;
+        Logger?.LogError("Device connected!");
+        return true;
+    }
 
-        var detailDataBuffer = Marshal.AllocHGlobal((int)requiredSize);
-
-        Marshal.WriteInt32(detailDataBuffer, (IntPtr.Size == 4) ? (4 + Marshal.SystemDefaultCharSize) : 8);
-
-        if (SetupDiGetDeviceInterfaceDetail(deviceInfoSet, ref deviceInterfaceData, detailDataBuffer, requiredSize, ref requiredSize, IntPtr.Zero))
+    // TODO: Proper async for AE5's DisconnectFromDevice
+    public async Task<bool> DisconnectFromDevice()
+    {
+        try
         {
-            var pDevicePathName = new IntPtr(detailDataBuffer.ToInt64() + 4);
-            var devicePath = Marshal.PtrToStringAuto(pDevicePathName);
-
-
-            DevicePath = devicePath;
-            return true;
+            if (DeviceConnected)
+            {
+                _device = null;
+                DeviceConnected = false;
+                return true;
+            }
+        }
+        catch (Exception)
+        {
+            return false;
         }
 
-
-        Marshal.FreeHGlobal(detailDataBuffer);
         return false;
     }
 
-    public async Task<bool> SendCommand(byte[] command)
-    {
-        if (!DeviceConnected)
-        {
-            return false;
-        }
-
-        uint IOCTL_CODE = 0x77772400; // Set RGB Command
-        uint nInBufferSize = 1044;
-        Marshal.Copy(command, 0, _lpInBuffer, command.Length);
-        var success = DeviceIoControl(_deviceHandle, IOCTL_CODE, _lpInBuffer, nInBufferSize, _lpOutBuffer, 1044,
-            out var bytesReturned, IntPtr.Zero);
-        return success;
-
-    }
-
-
-    public async Task<bool> ConnectToDevice()
-    {
-        _deviceHandle = CreateFile(DevicePath, 0xc0000000, 0x00000003, IntPtr.Zero, 0x00000003, 0, IntPtr.Zero);
-        if (_deviceHandle.IsInvalid)
-        {
-            //Send out error
-            return false;
-        }
-        //Create buffers
-
-        var nInputBuffer = new byte[1044];
-        var inputHandle = GCHandle.Alloc(nInputBuffer, GCHandleType.Pinned);
-        _lpInBuffer = inputHandle.AddrOfPinnedObject();
-        //Marshal.Copy(nInputBuffer, 0, lpInBuffer, nInputBuffer.Length);
-
-        var nOutBuffer = new byte[1044];
-        var outputHandle = GCHandle.Alloc(nOutBuffer, GCHandleType.Pinned);
-        _lpOutBuffer = outputHandle.AddrOfPinnedObject();
-        Marshal.Copy(_lpOutBuffer, nOutBuffer, 0, nOutBuffer.Length);
-
-        DeviceConnected = true;
-
-        return true;
-    }
 }
