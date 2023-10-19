@@ -4,7 +4,7 @@ export function Type() { return "network"; }
 export function Publisher() { return "Prismo"; }
 export function DefaultPosition() {return [75, 70]; }
 export function DeviceMessage() { return ["This device requires the Creative SignalRGB Service.", "Make sure the service is installed, running and set to automatic startup."]; }
-export function DefaultScale(){return 1.0;}
+export function DefaultScale(){return 10.0;}
 export function SubdeviceController(){ return false; }
 export function DefaultComponentBrand() { return "CompGen"; }
 /* global
@@ -12,14 +12,13 @@ controller:readonly
 discovery: readonly
 */
 
-//let LedPositions = [[0,0], [0,1], [0,2], [0,3], [0,4]];
 let creativePCIEDevice;
 var library = {
     "SoundblasterX AE-5":
     {
         InternalLEDCount: 5,
-		LedPositions: [[0, 0], [0, 1], [0, 2], [0, 3], [0, 4]],
-		Size: [1, 5],
+		LedPositions: [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0]],
+		Size: [5, 1],
         ExternalHeader: true,
         ExternalLEDLimit: 100,
 		FlippedRGB: false,
@@ -39,8 +38,8 @@ var library = {
 	"Katana V2":
 	{
 		InternalLEDCount: 7,
-		LedPositions: [[0, 0], [0, 1], [0, 2], [0, 3], [0, 4], [0, 5], [0, 6]],
-		Size: [1, 5],
+		LedPositions: [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0], [5, 0], [6, 0]],
+		Size: [7, 1],
 		ExternalHeader: false,
 		ExternalLEDLimit: 0,
 		FlippedRGB: true,
@@ -78,18 +77,13 @@ export function Render() {
 	creativePCIEDevice.sendColors(); // Internal RGB
 }
 
-export function ImageUrl() {
-	device.log(creativePCIEDevice.logoURL);
-	return library[controller.name].LogoURL;
-}
-
 
 
 //Represents each individual device.
 class CreativePCIEDevice {
 	constructor(controller) {
 		device.log(controller.name);
-        this.id = controller.id;
+		this.id = controller.id;
 		this.name = controller.name;
 		this.internalLEDCount = library[controller.name].InternalLEDCount;
 		this.externalHeader = library[controller.name].ExternalHeader;
@@ -97,12 +91,12 @@ class CreativePCIEDevice {
 		device.setImageFromUrl(library[controller.name].ImageURL);
 		this.flippedRGB = library[controller.name].FlippedRGB;
 		device.SetLedLimit(this.ExternalLEDLimit);
-		device.setSize(this.size);
+		device.setSize(library[controller.name].Size);
 		let names = [];
 		for (let i = 0; i < this.internalLEDCount; i++) {
 			names.push("Led " + i);
 		}
-        device.setControllableLeds(names, this.ledPositions);
+		device.setControllableLeds(names, library[controller.name].LedPositions);
 		//device.SetName(controller.name);
 		if (this.externalHeader) {
 			device.addChannel("External ARGB Header", this.ExternalLEDLimit);
@@ -117,24 +111,23 @@ class CreativePCIEDevice {
 		}
 	}
 
-    createInternalRGBPacket() {
-		let ledCount = library[controller.name].InternalLEDCount;
-		const header = library[controller.name].GetHeader(ledCount, false);
+	createInternalRGBPacket() {
+		const header = library[controller.name].GetHeader(this.internalLEDCount, false);
 		let colors = [];
-		for (let i = 0; i < ledCount; i++) {
-			let color = device.color(0, i);
+		for (let i = 0; i < this.internalLEDCount; i++) {
+			let color = device.color(i, 0);
 			colors.push(color[0]);
 			colors.push(color[1]);
 			colors.push(color[2]);
 		}
 
 		var logcolors = "["
-		for (var value of this.createPacket(header, colors, ledCount)) {
+		for (var value of this.createPacket(header, colors, this.internalLEDCount)) {
 			logcolors += value + ", ";
 		}
 		logcolors += "]"
 		//device.log(logcolors);
-		return this.createPacket(header, colors, ledCount);
+		return this.createPacket(header, colors, this.internalLEDCount);
 
     }
 
@@ -159,7 +152,7 @@ class CreativePCIEDevice {
 			packet[header.length + commandPos] = colors[colorPos + (this.flippedRGB ? 2 : 0)]; //Red or Blue
 			packet[header.length + commandPos + 1] = colors[colorPos + 1]; //Green
 			packet[header.length + commandPos + 2] = colors[colorPos + (this.flippedRGB ? 0 : 2)]; //Blue or Red
-			packet[header.length + commandPos + 3] = 0xFF; //Splitter
+			packet[header.length + commandPos + 3] = 0xFF; //Alpha
 		}
 		//device.log(logstring + "]")
 		return packet;
