@@ -5,6 +5,11 @@ using Windows.Devices.Enumeration;
 using Windows.Devices.SerialCommunication;
 using Windows.Storage.Streams;
 using ABI.Windows.UI.Input.Inking.Analysis;
+using System.Diagnostics;
+using Windows.Networking;
+using System.Reflection;
+using System.ComponentModel;
+using System.Security.Cryptography;
 
 namespace CreativeSignalRGBBridge;
 internal class KatanaV2Device : ICreativeDevice
@@ -79,7 +84,7 @@ internal class KatanaV2Device : ICreativeDevice
         }
         catch (Exception ex)
         {
-            _logger?.LogError("Failed to send command Exception: " + ex.Message);
+            _logger?.LogError(ex, "Failed to send command");
             return false;
         }
         if (deleteme < 5)
@@ -95,7 +100,6 @@ internal class KatanaV2Device : ICreativeDevice
     {
         _logger?.LogError("Katana V2 Found!");
         // We don't care what devices already exist until we want to connect
-
         if (!DeviceConnected && !DeviceFound)
         {
             DeviceFound = true;
@@ -130,6 +134,56 @@ internal class KatanaV2Device : ICreativeDevice
         DisconnectFromDevice();
     }
 
+    public async Task<bool> UnlockDevice()
+    {
+        if (!DeviceFound || DeviceConnected || DeviceId == null)
+        {
+            _logger?.LogWarning("Device unlock was called when it should not have been.");
+            return false;
+        }
+
+
+        var firmwareUtilityProcess = new Process
+        {
+            StartInfo = new ProcessStartInfo
+            {
+                FileName = Path.Combine(AppContext.BaseDirectory, "cudsp600_firmware_utility.exe"),
+                Arguments = $"auto ver /dv{Vid:X} /dp{Pid:X}", // Just gets the version so that it will unlock the device for us but not mess anything up.
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                CreateNoWindow = true
+            }
+        };
+        try
+        {
+            firmwareUtilityProcess.Start();
+        }
+        catch (Win32Exception ex)
+        {
+            if (ex.NativeErrorCode == 2) // File not found error code.
+            {
+                _logger?.LogError(ex, "Could not find cudsp600_firmware_utility.exe");
+            }
+            _logger?.LogError(ex, "Failed to run cudsp600_firmware_utility.exe");
+            return false;
+        }
+
+        // Check if unlock was successful
+        using var output = firmwareUtilityProcess.StandardOutput;
+        {
+            await firmwareUtilityProcess.WaitForExitAsync();
+            var processOutput = await output.ReadToEndAsync();
+            if (processOutput.Contains("unlock_comms [0]")) // Due to the programs poor logging there may be other random stuff before/after
+            {
+                return true;
+            }
+            _logger?.LogError("Failed to unlock device:\n\nOutput of cudsp600_firmware_utility.exe:\n" + processOutput);
+            return false;
+
+        }
+        
+    }
+
     // TODO: Proper async for KatanaV2's ConnectToDevice
     public async Task<bool> ConnectToDevice()
     {
@@ -137,8 +191,14 @@ internal class KatanaV2Device : ICreativeDevice
         {
             return false;
         }
+
+        if (!await UnlockDevice())
+        {
+            return false;
+        }
         _device = await SerialDevice.FromIdAsync(DeviceId);
         _logger?.LogError("Got serial port object");
+        
 
         _deviceWriter = new DataWriter(_device.OutputStream);
         _logger?.LogError("Opened serial port");
