@@ -56,13 +56,15 @@
 		</StandardDirectory>
 		
         <DirectoryRef Id="INSTALLFOLDER">
-            <Component Id="ServiceExecutable" Bitness="always64">
+            <Component Id="ServiceExecutable" Bitness="always64" Guid="94397727-4EBA-47D6-8155-5AF2CAF76039">
 
                 <File Id="CreativeSignalRGBBridgeFile"
                         Source="$(var.Creative_SignalRGB_Bridge_Service.TargetDir)publish\win-x64\Creative SignalRGB Bridge.exe"
                         KeyPath="true" />
 
-                
+                <File Id="FirmwareUtilityFile"
+                      Source="$(var.Creative_SignalRGB_Bridge_Service.ProjectDir)cudsp600_firmware_utility.exe"
+                      KeyPath="false" />
 
                 <ServiceInstall Id="CreativeSignalRGBBridgeService"
                                 Type="ownProcess"
@@ -80,6 +82,7 @@
                                 Wait="true" />
 				
 				<RemoveFile Id="ALLFILES" Name="*.*" On="both" />
+				<RemoveFile Id="FirmwareUtilityFile" Name="cudsp600_firmware_utility.exe" On="uninstall" />
 				<RemoveFile Id="CreativeSignalRGBBridgeFile" Name="CreativeSignalRGBBridge" On="uninstall" />
             </Component>
         </DirectoryRef>
