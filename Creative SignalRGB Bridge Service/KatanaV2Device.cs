@@ -10,12 +10,13 @@ using Windows.Networking;
 using System.Reflection;
 using System.ComponentModel;
 using System.Security.Cryptography;
+using System.Text.RegularExpressions;
+using System.Xml;
 
 namespace CreativeSignalRGBBridge;
-internal class KatanaV2Device : ICreativeDevice
+internal partial class KatanaV2Device : ICreativeDevice
 {
 
-    //TODO: Get Katana's actual display name
     public string DeviceName
     {
         get;
@@ -23,6 +24,13 @@ internal class KatanaV2Device : ICreativeDevice
     } = "Katana V2";
 
     public bool DeviceConnected
+    {
+        get;
+        private set;
+    }
+
+    // ReSharper disable once InconsistentNaming
+    public string UUID
     {
         get;
         private set;
@@ -40,8 +48,11 @@ internal class KatanaV2Device : ICreativeDevice
         set;
     }
 
+    [GeneratedRegex(@"(?<=\d{4}\\)[\w\d&]+")]
+    private static partial Regex UUIDRegex();
     private const ushort Vid = 0x041E;
     private const ushort Pid = 0x3260;
+
     private SerialDevice? _device;
     private DataWriter? _deviceWriter;
     private int deleteme = 0;
@@ -100,11 +111,35 @@ internal class KatanaV2Device : ICreativeDevice
     {
         _logger?.LogError("Katana V2 Found!");
         // We don't care what devices already exist until we want to connect
-        if (!DeviceConnected && !DeviceFound)
+        if (DeviceConnected || DeviceFound)
         {
-            DeviceFound = true;
-            DeviceId = deviceInfo.Id;
+            _logger?.LogWarning("New device found while there is already a device connected/found");
+            return;
         }
+        DeviceFound = true;
+        DeviceId = deviceInfo.Id;
+        DeviceName = deviceInfo.Name; // Although this DeviceInterface represents the serial port its name is that of container device.
+        // Gets the serial number
+        // Unfortunately it seems impossible to get the actual Device instead of the DeviceInterface using the VID and PID.
+        // So we use the Device ID we find to get the parent device which has the Serial Number in its Device ID.
+        var propertiesToQuery = new List<string>() {
+            "System.ItemNameDisplay",
+            "System.Devices.DeviceInstanceId",
+            "System.Devices.Parent",
+            "System.Devices.LocationPaths",
+            "System.Devices.Children"
+        };
+        var device = await DeviceInformation.FindAllAsync($"System.Devices.DeviceInstanceId:=\"{deviceInfo.Properties["System.Devices.DeviceInstanceId"]}\"", propertiesToQuery,
+            DeviceInformationKind.Device);
+
+        UUID = device.Count >= 1
+            ? UUIDRegex().Match((string)device[0].Properties["System.Devices.Parent"]).Value
+            : "";
+
+
+        if (!string.IsNullOrEmpty(UUID)) return;
+        _logger?.LogWarning("Could not find device serial number.\nUsing device instance instead");
+        UUID = UUIDRegex().Match((string)deviceInfo.Properties["System.Devices.DeviceInstanceId"]).Value;
 
     }
 
@@ -238,4 +273,6 @@ internal class KatanaV2Device : ICreativeDevice
 
         return false;
     }
+
+
 }

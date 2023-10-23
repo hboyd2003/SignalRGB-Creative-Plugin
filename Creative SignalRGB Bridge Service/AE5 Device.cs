@@ -9,18 +9,20 @@ using Windows.Devices.SerialCommunication;
 using Windows.Storage.Streams;
 using Buffer = Windows.Storage.Streams.Buffer;
 using Windows.Security.Cryptography;
+using System.Text.RegularExpressions;
 
 namespace CreativeSignalRGBBridge;
     // ReSharper disable once InconsistentNaming
-public class AE5_Device : ICreativeDevice
+public partial class AE5_Device : ICreativeDevice
 {
     private CustomDevice? _device = null;
     private static readonly Guid interfaceGUID = new("{c37acb87-d563-4aa0-b761-996e7864af79}");
     private static readonly string DeviceSelector = CustomDevice.GetDeviceSelector(interfaceGUID);
     private DeviceWatcher _deviceWatcher;
+    [GeneratedRegex(@"(?<=\d{4}\\)[\w\d&]+")]
+    // ReSharper disable once InconsistentNaming
+    private static partial Regex UUIDRegex();
 
-
-    //TODO: Get the AE-5's actual display name
     public string DeviceName
     {
         get;
@@ -40,6 +42,12 @@ public class AE5_Device : ICreativeDevice
     }
 
     public string? DeviceId
+    {
+        get;
+        private set;
+    }
+
+    public string UUID
     {
         get;
         private set;
@@ -94,12 +102,32 @@ public class AE5_Device : ICreativeDevice
     private async void DeviceAddedEvent(DeviceWatcher sender, DeviceInformation deviceInfo)
     {
         Logger?.LogError("Device Found!");
-        if (!DeviceConnected && !DeviceFound)
-        {
-            DeviceFound = true;
-            DeviceId = deviceInfo.Id;
-        }
+        if (DeviceConnected || DeviceFound) return;
 
+        DeviceFound = true;
+        DeviceId = deviceInfo.Id;
+        UUID = UUIDRegex().Match((string) deviceInfo.Properties["System.Devices.DeviceInstanceId"]).Value;
+
+        // Gets the name of the device
+        // Unfortunately it seems impossible to get the actual Device instead of the DeviceInterface using the VID and PID.
+        // So we use the Device ID we find to get the parent device which has the Actual Name of the device.
+        var propertiesToQuery = new List<string>() {
+            "System.ItemNameDisplay",
+            "System.Devices.DeviceInstanceId",
+            "System.Devices.Parent",
+            "System.Devices.LocationPaths",
+            "System.Devices.Children"
+        };
+        var device = await DeviceInformation.FindAllAsync($"System.Devices.DeviceInstanceId:=\"{deviceInfo.Properties["System.Devices.DeviceInstanceId"]}\"", propertiesToQuery,
+            DeviceInformationKind.Device);
+        if (device.Count > 0)
+        {
+            DeviceName = device[0].Name;
+        }
+        else
+        {
+            Logger?.LogWarning("Unable to get device name from device");
+        }
     }
 
     // TODO: Proper async for AE5's DeviceRemovedEvent

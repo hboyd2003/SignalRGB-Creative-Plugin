@@ -14,7 +14,7 @@ discovery: readonly
 
 let creativePCIEDevice;
 var library = {
-    "SoundblasterX AE-5":
+    "Sound BlasterX AE-5":
     {
         InternalLEDCount: 5,
 		LedPositions: [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0]],
@@ -262,10 +262,12 @@ class CreativeService {
 		
 		// Add new device
 		for (let foundDevice of foundDevices) {
-			if (!this.devices.find(e => e.name === foundDevice)) {
+			const deviceInfo = foundDevice.split(",");
+			if (!this.devices.find(e => e.name === deviceInfo[0])) {
 				// Create and add new device (controller).
-				service.log("Adding new device: " + foundDevice);
-				const creativePCIEBridge = new CreativePCIEBridge(foundDevice);
+				
+				service.log("Adding new device: " + deviceInfo[0]);
+				const creativePCIEBridge = new CreativePCIEBridge(deviceInfo);
                 this.devices.push(creativePCIEBridge);
 				service.addController(creativePCIEBridge);
                 service.announceController(creativePCIEBridge);
@@ -288,12 +290,13 @@ class CreativeService {
 // Controller for each device (each device has its own controller)
 // Only here b/c its needed
 class CreativePCIEBridge {
-	constructor(name) {
-		this.id = name;
+	constructor(deviceInfo) {
+		service.log(deviceInfo[1]);
+		this.id = deviceInfo[1];
 		this.ip = "127.0.0.1";
 		this.port = 12346;
-        this.name = name;
-		this.logoURL = library[name].LogoURL; // Logo for the device in the Service pane.
+		this.name = deviceInfo[0];
+		this.logoURL = library[deviceInfo[0]].LogoURL; // Logo for the device in the Service pane.
 	}
 
 

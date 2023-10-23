@@ -103,11 +103,11 @@ public partial class CreativeSignalRGBBridgeService : BackgroundService
                     deviceConnectionTasks.Append(
                         ae5.ConnectToDevice().ContinueWith(t =>
                         {
-                            if (t.Result) responseMessage.Append("\n" + ae5.DeviceName);
+                            if (t.Result) responseMessage.Append($"\n{ae5.DeviceName},{ae5.UUID}");
                         }));
                 } else
                 {
-                    responseMessage.Append("\n" + ae5.DeviceName);
+                    responseMessage.Append($"\n{ae5.DeviceName},{ae5.UUID}");
                 }
             }
 
@@ -118,11 +118,11 @@ public partial class CreativeSignalRGBBridgeService : BackgroundService
                     deviceConnectionTasks.Append(
                         katanaV2.ConnectToDevice().ContinueWith(t =>
                         {
-                            if (t.Result) responseMessage.Append("\n" + katanaV2.DeviceName);
+                            if (t.Result) responseMessage.Append($"\n{katanaV2.DeviceName},{katanaV2.UUID}");
                         }));
                 } else
                 {
-                    responseMessage.Append("\n" + katanaV2.DeviceName);
+                    responseMessage.Append($"\n{katanaV2.DeviceName},{katanaV2.UUID}");
                 }
             }
 
