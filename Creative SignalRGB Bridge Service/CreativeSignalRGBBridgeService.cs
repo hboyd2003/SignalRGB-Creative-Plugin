@@ -19,42 +19,34 @@ using Microsoft.Extensions.Logging;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
-using Windows.UI.Core;
 
 namespace CreativeSignalRGBBridge;
 
-public partial class CreativeSignalRGBBridgeService : BackgroundService
+// ReSharper disable once InconsistentNaming
+public partial class CreativeSignalRGBBridgeService(ILogger logger) : BackgroundService
 {
 
-    private const int ListenPort = 12346; 
+    private const int ListenPort = 12346;
     private const string Header = "Creative Bridge Plugin";
-    private UdpClient listener = null;
+    private UdpClient? _listener;
 
-    private int ledsendcommandmax = 0;
-    private List<IDeviceManager> deviceManagers;
-
-    private readonly ILogger<CreativeSignalRGBBridgeService> _logger;
-
-    public CreativeSignalRGBBridgeService(ILogger<CreativeSignalRGBBridgeService> logger)
+    private readonly List<IDeviceManager> _deviceManagers = new()
     {
-        _logger = logger;
-        deviceManagers = new List<IDeviceManager>();
-        deviceManagers.Add(new DeviceManager<AE5_Device>());
-        deviceManagers.Add(new DeviceManager<KatanaV2Device>());
-
-    }
+        new DeviceManager<AE5_Device>(),
+        new DeviceManager<KatanaV2Device>()
+    };
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         try
         {
             //System.Diagnostics.Debugger.Launch();
-            listener = new UdpClient(ListenPort);
-            var groupEP = new IPEndPoint(IPAddress.Broadcast, ListenPort);
+            _listener = new UdpClient(ListenPort);
+            var endPoint = new IPEndPoint(IPAddress.Broadcast, ListenPort);
 
             while (!stoppingToken.IsCancellationRequested)
             {
-                HandleReceivedMessage(listener.Receive(ref groupEP));
+                HandleReceivedMessage(_listener.Receive(ref endPoint));
             }
         }
         catch (TaskCanceledException)
@@ -63,7 +55,7 @@ public partial class CreativeSignalRGBBridgeService : BackgroundService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "{Message}", ex.Message);
+            logger.LogError(ex, "{Message}", ex.Message);
 
             Environment.Exit(1);
         }
@@ -77,43 +69,48 @@ public partial class CreativeSignalRGBBridgeService : BackgroundService
         // Line 1: Command
         // Line 2..n: Data
 
-        var message = Encoding.UTF8.GetString(udpMessage).Split('\n');
+        var messageArray = Encoding.UTF8.GetString(udpMessage).Split('\n');
 
-        if (!message[0].Trim().Equals(Header))
+        if (!messageArray[0].Trim().Equals(Header))
         {
             return;
         }
 
-        if (message[1].Trim().Equals("DEVICES")) // Command to retrieve list of devices
+        switch (messageArray[1].Trim())
         {
-            // Add each device to a response with their name followed by their UUID
-            StringBuilder responseMessage = new("Creative SignalRGB Service\nDEVICES");
+            case "DEVICES":
+                // Add each device to a response with their name followed by their UUID
+                StringBuilder responseBuilder = new("Creative SignalRGB Service\nDEVICES");
 
-            foreach (var deviceManager in deviceManagers)
-            {
-                foreach (var device in deviceManager.Devices)
+                foreach (var deviceManager in _deviceManagers)
                 {
-                    responseMessage.Append($"\n{device.DeviceName},{device.UUID}");
-                    device.ConnectToDeviceAsync();
+                    foreach (var device in deviceManager.Devices)
+                    {
+                        responseBuilder.Append($"\n{device.DeviceName},{device.UUID}");
+                        device.ConnectToDeviceAsync();
+                    }
                 }
-            }
 
-            var responseData = Encoding.UTF8.GetBytes(responseMessage.ToString());
-            var loopback = new IPEndPoint(IPAddress.Loopback, 12347);
-            listener.Send(responseData, responseData.Length, loopback);
+                var responseData = Encoding.UTF8.GetBytes(responseBuilder.ToString());
+                var loopback = new IPEndPoint(IPAddress.Loopback, 12347);
+                _listener.Send(responseData, responseData.Length, loopback);
+                break;
 
-        } else if (message[1].Trim().Contains("SETRGB")) {
-            var UUID = message[2].Trim();
-            foreach (var deviceManager in deviceManagers)
-            {
-                CreativeDevice device;
-                if ((device = deviceManager.Devices.Find(device => device.UUID.Equals(UUID))) is null) continue;
-                var bytes = Convert.FromBase64String(message[3]);
-                device.SendCommandAsync(bytes);
+            case "SETRGB":
+                // ReSharper disable once InconsistentNaming
+                var UUID = messageArray[2].Trim();
+                foreach (var deviceManager in _deviceManagers)
+                {
+                    CreativeDevice device;
+                    if ((device = deviceManager.Devices.Find(device => device.UUID.Equals(UUID))) is null) continue;
+                    var bytes = Convert.FromBase64String(messageArray[3]);
+                    device.SendCommandAsync(bytes);
 
 
-            }
+                }
+                break;
         }
+
     }
 
 }

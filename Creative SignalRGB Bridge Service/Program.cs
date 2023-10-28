@@ -27,10 +27,7 @@ using Microsoft.Extensions.Logging.EventLog;
 if (Environment.UserInteractive == false) return;
 
 var builder = Host.CreateDefaultBuilder(args)
-    .UseWindowsService(options =>
-    {
-        options.ServiceName = "Creative SignalRGB Bridge";
-    })
+    .UseWindowsService(options => { options.ServiceName = "Creative SignalRGB Bridge"; })
     .ConfigureServices((context, services) =>
     {
         LoggerProviderOptions.RegisterProviderOptions<
