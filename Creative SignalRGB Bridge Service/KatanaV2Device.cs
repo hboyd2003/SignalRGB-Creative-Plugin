@@ -14,33 +14,15 @@ using System.Text.RegularExpressions;
 using System.Xml;
 
 namespace CreativeSignalRGBBridge;
-internal partial class KatanaV2Device : ICreativeDevice
+internal partial class KatanaV2Device : CreativeDevice, ICreativeDevice
 {
 
-    public string DeviceName
+    public override string DeviceName
     {
         get;
-        private set;
+        protected set;
     } = "Katana V2";
 
-    public bool DeviceConnected
-    {
-        get;
-        private set;
-    }
-
-    // ReSharper disable once InconsistentNaming
-    public string UUID
-    {
-        get;
-        private set;
-    }
-
-    public bool DeviceFound
-    {
-        get;
-        private set;
-    }
 
     public ILogger<CreativeSignalRGBBridgeService>? _logger
     {
@@ -56,26 +38,43 @@ internal partial class KatanaV2Device : ICreativeDevice
     private SerialDevice? _device;
     private DataWriter? _deviceWriter;
     private int deleteme = 0;
-    private static readonly string DeviceSelector = SerialDevice.GetDeviceSelectorFromUsbVidPid(Vid, Pid);
-    private DeviceWatcher _deviceWatcher;
-    public string? DeviceId
+    public static string DeviceSelector => SerialDevice.GetDeviceSelectorFromUsbVidPid(Vid, Pid);
+    public KatanaV2Device(DeviceInformation deviceInformation)
     {
-        get;
-        private set;
-    }
+        _logger?.LogError("Katana V2 Found!");
+        // We don't care what devices already exist until we want to connect
+        if (DeviceConnected)
+        {
+            _logger?.LogWarning("New device found while there is already a device connected/found");
+            return;
+        }
+        DeviceInstancePath = deviceInformation.Id;
+        DeviceName = deviceInformation.Name; // Although this DeviceInterface represents the serial port its name is that of container device.
+        // Gets the serial number
+        // Unfortunately it seems impossible to get the actual CreativeDevice instead of the DeviceInterface using the VID and PID.
+        // So we use the CreativeDevice ID we find to get the parent device which has the Serial Number in its CreativeDevice ID.
+        var propertiesToQuery = new List<string>() {
+            "System.ItemNameDisplay",
+            "System.Devices.DeviceInstanceId",
+            "System.Devices.Parent",
+            "System.Devices.LocationPaths",
+            "System.Devices.Children"
+        };
+        var device = DeviceInformation.FindAllAsync($"System.Devices.DeviceInstanceId:=\"{deviceInformation.Properties["System.Devices.DeviceInstanceId"]}\"", propertiesToQuery,
+            DeviceInformationKind.Device).GetResults();
 
-    public KatanaV2Device()
-    {
-        _logger?.LogError("Starting Katanav2 class");
-        _deviceWatcher = DeviceInformation.CreateWatcher(DeviceSelector);
-        _deviceWatcher.Added += DeviceAddedEvent;
-        _deviceWatcher.Removed += DeviceRemovedEvent;
-        _deviceWatcher.Start();
-        _logger?.LogError("Started search for KatanaV2");
+        UUID = device.Count >= 1
+            ? UUIDRegex().Match((string)device[0].Properties["System.Devices.Parent"]).Value
+            : "";
+
+
+        if (!string.IsNullOrEmpty(UUID)) return;
+        _logger?.LogWarning("Could not find device serial number.\nUsing device instance instead");
+        UUID = UUIDRegex().Match((string)deviceInformation.Properties["System.Devices.DeviceInstanceId"]).Value;
     }
 
     // TODO: Proper async for KatanaV2's SendCommand
-    public async Task<bool> SendCommand(byte[] command)
+    public override async Task<bool> SendCommandAsync(byte[] command)
     {
         if (_deviceWriter == null)
         {
@@ -106,74 +105,18 @@ internal partial class KatanaV2Device : ICreativeDevice
         return true;
     }
 
-    // TODO: Proper async for KatanaV2's DeviceAddedEvent
-    private async void DeviceAddedEvent(DeviceWatcher sender, DeviceInformation deviceInfo)
-    {
-        _logger?.LogError("Katana V2 Found!");
-        // We don't care what devices already exist until we want to connect
-        if (DeviceConnected || DeviceFound)
-        {
-            _logger?.LogWarning("New device found while there is already a device connected/found");
-            return;
-        }
-        DeviceFound = true;
-        DeviceId = deviceInfo.Id;
-        DeviceName = deviceInfo.Name; // Although this DeviceInterface represents the serial port its name is that of container device.
-        // Gets the serial number
-        // Unfortunately it seems impossible to get the actual Device instead of the DeviceInterface using the VID and PID.
-        // So we use the Device ID we find to get the parent device which has the Serial Number in its Device ID.
-        var propertiesToQuery = new List<string>() {
-            "System.ItemNameDisplay",
-            "System.Devices.DeviceInstanceId",
-            "System.Devices.Parent",
-            "System.Devices.LocationPaths",
-            "System.Devices.Children"
-        };
-        var device = await DeviceInformation.FindAllAsync($"System.Devices.DeviceInstanceId:=\"{deviceInfo.Properties["System.Devices.DeviceInstanceId"]}\"", propertiesToQuery,
-            DeviceInformationKind.Device);
-
-        UUID = device.Count >= 1
-            ? UUIDRegex().Match((string)device[0].Properties["System.Devices.Parent"]).Value
-            : "";
-
-
-        if (!string.IsNullOrEmpty(UUID)) return;
-        _logger?.LogWarning("Could not find device serial number.\nUsing device instance instead");
-        UUID = UUIDRegex().Match((string)deviceInfo.Properties["System.Devices.DeviceInstanceId"]).Value;
-
-    }
-
-    // TODO: Proper async for KatanaV2's DeviceRemovedEvent
-    private async void DeviceRemovedEvent(DeviceWatcher sender, DeviceInformationUpdate deviceInfo)
-    {
-        if (deviceInfo.Id != DeviceId)
-        {
-            return;
-        }
-
-        if (DeviceFound)
-        {
-            DeviceId = null;
-            DeviceFound = false;
-        }
-
-        if (DeviceConnected)
-        {
-            DisconnectFromDevice();
-        }
-    }
 
     // TODO: Proper async for KatanaV2's ErrorReceivedEvent
     private async void ErrorReceivedEvent(SerialDevice sender, ErrorReceivedEventArgs eventArgs)
     { 
-        DisconnectFromDevice();
+        DisconnectFromDeviceAsync();
     }
 
     public async Task<bool> UnlockDevice()
     {
-        if (!DeviceFound || DeviceConnected || DeviceId == null)
+        if (DeviceConnected || DeviceInstancePath == null)
         {
-            _logger?.LogWarning("Device unlock was called when it should not have been.");
+            _logger?.LogWarning("CreativeDevice unlock was called when it should not have been.");
             return false;
         }
 
@@ -220,9 +163,9 @@ internal partial class KatanaV2Device : ICreativeDevice
     }
 
     // TODO: Proper async for KatanaV2's ConnectToDevice
-    public async Task<bool> ConnectToDevice()
+    public override async Task<bool> ConnectToDeviceAsync()
     {
-        if (DeviceId == null || !DeviceFound || DeviceConnected)
+        if (DeviceInstancePath == null || DeviceConnected)
         {
             return false;
         }
@@ -231,7 +174,7 @@ internal partial class KatanaV2Device : ICreativeDevice
         {
             return false;
         }
-        _device = await SerialDevice.FromIdAsync(DeviceId);
+        _device = await SerialDevice.FromIdAsync(DeviceInstancePath);
         _logger?.LogError("Got serial port object");
         
 
@@ -244,8 +187,8 @@ internal partial class KatanaV2Device : ICreativeDevice
         _logger?.LogError("Turning on LEDs");
 
         // Turn on LEDs (if they are off)
-        await SendCommand(new byte[] { 0x5a, 0x3a, 0x02, 0x25, 0x01 });
-        SendCommand(new byte[] { 0x5a, 0x3a, 0x02, 0x26, 0x01 });
+        await SendCommandAsync(new byte[] { 0x5a, 0x3a, 0x02, 0x25, 0x01 });
+        SendCommandAsync(new byte[] { 0x5a, 0x3a, 0x02, 0x26, 0x01 });
         _logger?.LogError("Finished Connecting to device.");
 
         //var errorReceivedEventHandler = new Windows.Foundation.TypedEventHandler<SerialDevice, ErrorReceivedEventArgs>(this.ErrorReceivedEvent);
@@ -255,7 +198,7 @@ internal partial class KatanaV2Device : ICreativeDevice
     }
 
     // TODO: Proper async for KatanaV2's DisconnectFromDevice
-    public async Task<bool> DisconnectFromDevice()
+    public override async Task<bool> DisconnectFromDeviceAsync()
     {
         try
         {

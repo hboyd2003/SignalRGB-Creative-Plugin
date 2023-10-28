@@ -1,28 +1,15 @@
-﻿namespace CreativeSignalRGBBridge;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-public interface ICreativeDevice
+namespace CreativeSignalRGBBridge
 {
-    string DeviceName
+    public interface ICreativeDevice
     {
-        get;
+        public static abstract string DeviceSelector { get; }
+
+
     }
-
-    bool DeviceConnected
-    {
-        get;
-    }
-
-    bool DeviceFound
-    {
-        get;
-    }
-
-    string? DeviceId
-    {
-        get;
-    }
-
-    Task<bool> SendCommand(byte[] command);
-
-    Task<bool> ConnectToDevice();
 }

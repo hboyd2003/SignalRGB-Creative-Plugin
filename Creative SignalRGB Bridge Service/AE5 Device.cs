@@ -13,45 +13,21 @@ using System.Text.RegularExpressions;
 
 namespace CreativeSignalRGBBridge;
     // ReSharper disable once InconsistentNaming
-public partial class AE5_Device : ICreativeDevice
+public partial class AE5_Device : CreativeDevice, ICreativeDevice
 {
     private CustomDevice? _device = null;
-    private static readonly Guid interfaceGUID = new("{c37acb87-d563-4aa0-b761-996e7864af79}");
-    private static readonly string DeviceSelector = CustomDevice.GetDeviceSelector(interfaceGUID);
-    private DeviceWatcher _deviceWatcher;
+    public static readonly Guid interfaceGUID = new("{c37acb87-d563-4aa0-b761-996e7864af79}");
+    public static string DeviceSelector => CustomDevice.GetDeviceSelector(interfaceGUID);
+
     [GeneratedRegex(@"(?<=\d{4}\\)[\w\d&]+")]
     // ReSharper disable once InconsistentNaming
     private static partial Regex UUIDRegex();
 
-    public string DeviceName
+    public override string DeviceName
     {
         get;
-        private set;
+        protected set;
     } = "SoundblasterX AE-5";
-
-    public bool DeviceConnected
-    {
-        get;
-        private set;
-    }
-
-    public bool DeviceFound
-    {
-        get;
-        private set;
-    }
-
-    public string? DeviceId
-    {
-        get;
-        private set;
-    }
-
-    public string UUID
-    {
-        get;
-        private set;
-    }
 
     public ILogger<CreativeSignalRGBBridgeService>? Logger
     {
@@ -59,12 +35,35 @@ public partial class AE5_Device : ICreativeDevice
         set;
     }
 
-    public AE5_Device()
+
+    public AE5_Device(DeviceInformation deviceInformation)
     {
-        _deviceWatcher = DeviceInformation.CreateWatcher(DeviceSelector);
-        _deviceWatcher.Added += DeviceAddedEvent;
-        _deviceWatcher.Removed += DeviceRemovedEvent;
-        _deviceWatcher.Start();
+        Logger?.LogError("CreativeDevice Found!");
+
+        DeviceInstancePath = deviceInformation.Id;
+        UUID = UUIDRegex().Match((string)deviceInformation.Properties["System.Devices.DeviceInstanceId"]).Value;
+
+
+        // Gets the name of the device
+        // Unfortunately it seems impossible to get the actual CreativeDevice instead of the DeviceInterface using the VID and PID.
+        // So we use the CreativeDevice ID we find to get the parent device which has the Actual Name of the device.
+        var propertiesToQuery = new List<string>() {
+            "System.ItemNameDisplay",
+            "System.Devices.DeviceInstanceId",
+            "System.Devices.Parent",
+            "System.Devices.LocationPaths",
+            "System.Devices.Children"
+        };
+        var device = DeviceInformation.FindAllAsync($"System.Devices.DeviceInstanceId:=\"{deviceInformation.Properties["System.Devices.DeviceInstanceId"]}\"", propertiesToQuery,
+            DeviceInformationKind.Device).GetResults();
+        if (device.Count > 0)
+        {
+            DeviceName = device[0].Name;
+        }
+        else
+        {
+            Logger?.LogWarning("Unable to get device name from device");
+        }
     }
 
     // Needed as the second custom flag needs to be set to one and the IOControlCode constructor can't
@@ -98,63 +97,10 @@ public partial class AE5_Device : ICreativeDevice
         } = 0x100;
     }
 
-    // TODO: Proper async for AE5's DeviceAddedEvent
-    private async void DeviceAddedEvent(DeviceWatcher sender, DeviceInformation deviceInfo)
-    {
-        Logger?.LogError("Device Found!");
-        if (DeviceConnected || DeviceFound) return;
-
-        DeviceFound = true;
-        DeviceId = deviceInfo.Id;
-        UUID = UUIDRegex().Match((string) deviceInfo.Properties["System.Devices.DeviceInstanceId"]).Value;
-
-        // Gets the name of the device
-        // Unfortunately it seems impossible to get the actual Device instead of the DeviceInterface using the VID and PID.
-        // So we use the Device ID we find to get the parent device which has the Actual Name of the device.
-        var propertiesToQuery = new List<string>() {
-            "System.ItemNameDisplay",
-            "System.Devices.DeviceInstanceId",
-            "System.Devices.Parent",
-            "System.Devices.LocationPaths",
-            "System.Devices.Children"
-        };
-        var device = await DeviceInformation.FindAllAsync($"System.Devices.DeviceInstanceId:=\"{deviceInfo.Properties["System.Devices.DeviceInstanceId"]}\"", propertiesToQuery,
-            DeviceInformationKind.Device);
-        if (device.Count > 0)
-        {
-            DeviceName = device[0].Name;
-        }
-        else
-        {
-            Logger?.LogWarning("Unable to get device name from device");
-        }
-    }
-
-    // TODO: Proper async for AE5's DeviceRemovedEvent
-    private async void DeviceRemovedEvent(DeviceWatcher sender, DeviceInformationUpdate deviceInfo)
-    {
-        Logger?.LogError("Device Removed!");
-        if (deviceInfo.Id != DeviceId)
-        {
-            return;
-        }
-
-        if (DeviceFound && deviceInfo.Id == DeviceId)
-        {
-            DeviceId = null;
-            DeviceFound = false;
-        }
-
-        if (DeviceConnected)
-        {
-            //DisconnectFromDevice();
-        }
-    }
-
     // TODO: Proper async for AE5's SendCommand
-    public async Task<bool> SendCommand(byte[] command)
+    public override async Task<bool> SendCommandAsync(byte[] command)
     {
-        if (DeviceId == null || !DeviceFound || !DeviceConnected || _device == null)
+        if (DeviceInstancePath == null || !DeviceConnected || _device == null)
         {
             return false;
         }
@@ -169,7 +115,7 @@ public partial class AE5_Device : ICreativeDevice
         catch (Exception)
         {
             Logger?.LogError("Error sending command disconnecting!");
-            DisconnectFromDevice();
+            _ = DisconnectFromDeviceAsync();
             return false;
         }
         //Logger?.LogError("Sent command!");
@@ -178,17 +124,17 @@ public partial class AE5_Device : ICreativeDevice
     }
 
     // TODO: Proper async for AE5's ConnectToDevice
-    public async Task<bool> ConnectToDevice()
+    public override async Task<bool> ConnectToDeviceAsync()
     {
-        Logger?.LogError("Connecting to the Device!");
-        if (DeviceId == null || !DeviceFound || DeviceConnected)
+        Logger?.LogError("Connecting to the CreativeDevice!");
+        if (DeviceInstancePath == null || DeviceConnected)
         {
             return false;
         }
 
         try
         {
-            _device = await CustomDevice.FromIdAsync(DeviceId, DeviceAccessMode.ReadWrite, DeviceSharingMode.Shared);
+            _device = await CustomDevice.FromIdAsync(DeviceInstancePath, DeviceAccessMode.ReadWrite, DeviceSharingMode.Shared);
         }
         catch (Exception)
         {
@@ -196,12 +142,12 @@ public partial class AE5_Device : ICreativeDevice
         }
 
         DeviceConnected = true;
-        Logger?.LogError("Device connected!");
+        Logger?.LogError("CreativeDevice connected!");
         return true;
     }
 
     // TODO: Proper async for AE5's DisconnectFromDevice
-    public async Task<bool> DisconnectFromDevice()
+    public override async Task<bool> DisconnectFromDeviceAsync()
     {
         try
         {

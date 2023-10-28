@@ -105,9 +105,9 @@ class CreativePCIEDevice {
 
 	sendColors() {
 		//device.log("Sending colors to " + controller.ip + " with the name of " + this.name);
-		udp.send(controller.ip, controller.port, "Creative Bridge Plugin\n" + "SETRGB\n" + this.name + "\n" + base64.Encode(creativePCIEDevice.createInternalRGBPacket()));
+		udp.send(controller.ip, controller.port, "Creative Bridge Plugin\n" + "SETRGB\n" + this.id + "\n" + base64.Encode(creativePCIEDevice.createInternalRGBPacket()));
 		if (this.externalHeader) {
-			udp.send(controller.ip, controller.port, "Creative Bridge Plugin\n" + "SETRGB\n"  + this.name + "\n" + base64.Encode(creativePCIEDevice.createExternalRGBPacket()));
+			udp.send(controller.ip, controller.port, "Creative Bridge Plugin\n" + "SETRGB\n"  + this.id + "\n" + base64.Encode(creativePCIEDevice.createExternalRGBPacket()));
 		}
 	}
 
@@ -218,11 +218,11 @@ export function DiscoveryService() {
 		
 		// Response should be "Creative SignalRGB Service" as first line followed by a command then devices (if needed).
 		let response = value.response.toString().split("\n");
-		
+        service.log(value.response.toString());
 		if (response[0] !== "Creative SignalRGB Service") {
 			// Recieved response can be from anything (Including itself!)
 			return;
-		} else if (response[1] === "DEVICES") {
+		} else if (response[1].trim().includes("DEVICES")) {
 			if (!(value.ip in this.windowsServices)) {
 				service.log("Found new windows service at " + value.ip + "!")
 				let creativeService = new CreativeService(value);
@@ -231,7 +231,7 @@ export function DiscoveryService() {
 			service.log("Recieved response from " + value.ip + " with " + (response.length - 2) + " devices!");
 			response.splice(0, 2); // Remove the header and command
 			this.windowsServices[value.ip].updateDevices(response);
-		} else if (response[1] === "STOPPING") {
+		} else if (response[1].trim() === "STOPPING") {
 			this.windowsServices[value.ip].removeAllDevices();
 		} else {
 			service.log("The command " + response[1] + " is not a recognized command!");
@@ -263,6 +263,7 @@ class CreativeService {
 		// Add new device
 		for (let foundDevice of foundDevices) {
 			const deviceInfo = foundDevice.split(",");
+            service.log(foundDevice);
 			if (!this.devices.find(e => e.name === deviceInfo[0])) {
 				// Create and add new device (controller).
 				

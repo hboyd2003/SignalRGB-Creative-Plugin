@@ -19,6 +19,7 @@ using Microsoft.Extensions.Logging;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using Windows.UI.Core;
 
 namespace CreativeSignalRGBBridge;
 
@@ -29,24 +30,18 @@ public partial class CreativeSignalRGBBridgeService : BackgroundService
     private const string Header = "Creative Bridge Plugin";
     private UdpClient listener = null;
 
-    private AE5_Device ae5;
-    private KatanaV2Device katanaV2;
     private int ledsendcommandmax = 0;
+    private List<IDeviceManager> deviceManagers;
 
     private readonly ILogger<CreativeSignalRGBBridgeService> _logger;
 
     public CreativeSignalRGBBridgeService(ILogger<CreativeSignalRGBBridgeService> logger)
     {
         _logger = logger;
-        _logger.LogError("INIT");
-        ae5 = new AE5_Device();
-        _logger.LogError("AE5 Class");
-        ae5.Logger = _logger;
-        _logger.LogError("AE5 Logger");
-        katanaV2 = new KatanaV2Device();
-        _logger.LogError("Katana Class");
-        katanaV2._logger = _logger;
-        _logger.LogError("Katana Logger");
+        deviceManagers = new List<IDeviceManager>();
+        deviceManagers.Add(new DeviceManager<AE5_Device>());
+        deviceManagers.Add(new DeviceManager<KatanaV2Device>());
+
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -55,7 +50,7 @@ public partial class CreativeSignalRGBBridgeService : BackgroundService
         {
             //System.Diagnostics.Debugger.Launch();
             listener = new UdpClient(ListenPort);
-            IPEndPoint groupEP = new IPEndPoint(IPAddress.Broadcast, ListenPort);
+            var groupEP = new IPEndPoint(IPAddress.Broadcast, ListenPort);
 
             while (!stoppingToken.IsCancellationRequested)
             {
@@ -75,7 +70,6 @@ public partial class CreativeSignalRGBBridgeService : BackgroundService
     }
 
 
-
     private void HandleReceivedMessage(byte[] udpMessage)
     {
         //---Message Format---
@@ -90,60 +84,36 @@ public partial class CreativeSignalRGBBridgeService : BackgroundService
             return;
         }
 
-        if (message[1].Trim().Equals("DEVICES"))
+        if (message[1].Trim().Equals("DEVICES")) // Command to retrieve list of devices
         {
-            // Add each device that is connected to the response and try to connect to those that are found but not connected
+            // Add each device to a response with their name followed by their UUID
             StringBuilder responseMessage = new("Creative SignalRGB Service\nDEVICES");
-            List<Task> deviceConnectionTasks = new List<Task>();
 
-            if (ae5.DeviceFound)
+            foreach (var deviceManager in deviceManagers)
             {
-                if (!ae5.DeviceConnected)
+                foreach (var device in deviceManager.Devices)
                 {
-                    deviceConnectionTasks.Append(
-                        ae5.ConnectToDevice().ContinueWith(t =>
-                        {
-                            if (t.Result) responseMessage.Append($"\n{ae5.DeviceName},{ae5.UUID}");
-                        }));
-                } else
-                {
-                    responseMessage.Append($"\n{ae5.DeviceName},{ae5.UUID}");
+                    responseMessage.Append($"\n{device.DeviceName},{device.UUID}");
+                    device.ConnectToDeviceAsync();
                 }
             }
 
-            if (katanaV2.DeviceFound)
-            {
-                if (!katanaV2.DeviceConnected)
-                {
-                    deviceConnectionTasks.Append(
-                        katanaV2.ConnectToDevice().ContinueWith(t =>
-                        {
-                            if (t.Result) responseMessage.Append($"\n{katanaV2.DeviceName},{katanaV2.UUID}");
-                        }));
-                } else
-                {
-                    responseMessage.Append($"\n{katanaV2.DeviceName},{katanaV2.UUID}");
-                }
-            }
-
-            Task.WaitAll(deviceConnectionTasks.ToArray());
             var responseData = Encoding.UTF8.GetBytes(responseMessage.ToString());
             var loopback = new IPEndPoint(IPAddress.Loopback, 12347);
             listener.Send(responseData, responseData.Length, loopback);
 
         } else if (message[1].Trim().Contains("SETRGB")) {
-            if (ae5.DeviceConnected && message[2].Contains(ae5.DeviceName))
+            var UUID = message[2].Trim();
+            foreach (var deviceManager in deviceManagers)
             {
+                CreativeDevice device;
+                if ((device = deviceManager.Devices.Find(device => device.UUID.Equals(UUID))) is null) continue;
                 var bytes = Convert.FromBase64String(message[3]);
-                //_logger.LogError("COMMAND: " + Convert.ToHexString(bytes));
-                _ = ae5.SendCommand(bytes);
-            }
+                device.SendCommandAsync(bytes);
 
-            if (katanaV2.DeviceConnected && message[2].StartsWith(katanaV2.DeviceName))
-            {
-                var bytes = Convert.FromBase64String(message[3]);
-                _ = katanaV2.SendCommand(bytes);
+
             }
         }
     }
+
 }

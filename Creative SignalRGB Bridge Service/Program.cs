@@ -21,7 +21,12 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Configuration;
 using Microsoft.Extensions.Logging.EventLog;
 
-IHostBuilder builder = Host.CreateDefaultBuilder(args)
+
+// TODO: Check if running as a service or as a program and display warning.
+
+if (Environment.UserInteractive == false) return;
+
+var builder = Host.CreateDefaultBuilder(args)
     .UseWindowsService(options =>
     {
         options.ServiceName = "Creative SignalRGB Bridge";
@@ -40,5 +45,5 @@ IHostBuilder builder = Host.CreateDefaultBuilder(args)
         });
     });
 
-IHost host = builder.Build();
+var host = builder.Build();
 host.Run();
