@@ -23,12 +23,19 @@ using System.Text;
 namespace CreativeSignalRGBBridge;
 
 // ReSharper disable once InconsistentNaming
-public partial class CreativeSignalRGBBridgeService(ILogger logger) : BackgroundService
+public partial class CreativeSignalRGBBridgeService : BackgroundService
 {
+
 
     private const int ListenPort = 12346;
     private const string Header = "Creative Bridge Plugin";
     private UdpClient? _listener;
+    private readonly ILogger _logger;
+
+    CreativeSignalRGBBridgeService(ILogger logger)
+    {
+        this._logger = logger;
+    }
 
     private readonly List<IDeviceManager> _deviceManagers = new()
     {
@@ -55,7 +62,7 @@ public partial class CreativeSignalRGBBridgeService(ILogger logger) : Background
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "{Message}", ex.Message);
+            _logger.LogError(ex, "{Message}", ex.Message);
 
             Environment.Exit(1);
         }
