@@ -8,13 +8,11 @@ using Microsoft.Extensions.Logging;
 
 namespace CreativeSignalRGBBridge;
 
-internal partial class KatanaV2Device : CreativeDevice, ICreativeDevice
+public partial class KatanaV2Device : CreativeDevice, ICreativeDevice
 {
-
-
     public sealed override string DeviceName { get; protected set; } = "Katana V2";
     public static string DeviceSelector => SerialDevice.GetDeviceSelectorFromUsbVidPid(Vid, Pid);
-    public ILogger<CreativeSignalRGBBridgeService>? Logger { get; set; }
+    private readonly ILogger Logger;
     
     [GeneratedRegex(@"(?<=\d{4}\\)[\w\d&]+")]
     // ReSharper disable once InconsistentNaming
@@ -26,7 +24,7 @@ internal partial class KatanaV2Device : CreativeDevice, ICreativeDevice
     private DataWriter? _deviceWriter;
     private int deleteme;
 
-    public KatanaV2Device(DeviceInformation deviceInformation)
+    public KatanaV2Device(ILogger<CreativeSignalRGBBridgeService> Logger, DeviceInformation deviceInformation)
     {
         Logger?.LogError("Katana V2 Found!");
         // We don't care what devices already exist until we want to connect

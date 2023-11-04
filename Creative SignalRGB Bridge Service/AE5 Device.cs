@@ -13,15 +13,16 @@ public partial class AE5_Device : CreativeDevice, ICreativeDevice
     public override string DeviceName { get; protected set; } = "SoundblasterX AE-5";
     public static readonly Guid InterfaceGuid = new("{c37acb87-d563-4aa0-b761-996e7864af79}");
     public static string DeviceSelector => CustomDevice.GetDeviceSelector(InterfaceGuid);
-    public ILogger<CreativeSignalRGBBridgeService>? Logger { get; set; }
+    private ILogger Logger;
 
     private CustomDevice? _device;
     [GeneratedRegex(@"(?<=\d{4}\\)[\w\d&]+")]
     // ReSharper disable once InconsistentNaming
     private static partial Regex UUIDRegex();
 
-    public AE5_Device(DeviceInformation deviceInformation)
+    public AE5_Device(ILogger<CreativeSignalRGBBridgeService> logger, DeviceInformation deviceInformation)
     {
+        Logger = logger;
         Logger?.LogError("CreativeDevice Found!");
 
         DeviceInstancePath = deviceInformation.Id;

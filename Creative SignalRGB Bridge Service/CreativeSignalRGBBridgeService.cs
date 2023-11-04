@@ -23,7 +23,7 @@ using System.Text;
 namespace CreativeSignalRGBBridge;
 
 // ReSharper disable once InconsistentNaming
-public partial class CreativeSignalRGBBridgeService : BackgroundService
+public class CreativeSignalRGBBridgeService : BackgroundService
 {
 
 
@@ -31,17 +31,20 @@ public partial class CreativeSignalRGBBridgeService : BackgroundService
     private const string Header = "Creative Bridge Plugin";
     private UdpClient? _listener;
     private readonly ILogger _logger;
+    private readonly List<IDeviceManager> _deviceManagers;
 
-    CreativeSignalRGBBridgeService(ILogger logger)
+    public CreativeSignalRGBBridgeService(ILogger<CreativeSignalRGBBridgeService> logger, DeviceManager<AE5_Device> ae5DeviceManager, DeviceManager<KatanaV2Device> katanaDeviceManager)
     {
+        _deviceManagers = new List<IDeviceManager>()
+        {
+            ae5DeviceManager,
+            katanaDeviceManager
+        };
         this._logger = logger;
+
     }
 
-    private readonly List<IDeviceManager> _deviceManagers = new()
-    {
-        new DeviceManager<AE5_Device>(),
-        new DeviceManager<KatanaV2Device>()
-    };
+
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {

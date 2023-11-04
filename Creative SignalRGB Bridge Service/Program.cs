@@ -26,21 +26,22 @@ using Microsoft.Extensions.Logging.EventLog;
 
 if (Environment.UserInteractive == false) return;
 
-var builder = Host.CreateDefaultBuilder(args)
-    .UseWindowsService(options => { options.ServiceName = "Creative SignalRGB Bridge"; })
-    .ConfigureServices((context, services) =>
-    {
-        LoggerProviderOptions.RegisterProviderOptions<
-            EventLogSettings, EventLogLoggerProvider>(services);
+var builder = Host.CreateApplicationBuilder(args);
+builder.Services.AddWindowsService(options =>
+{
+    options.ServiceName = "Creative SignalRGB Bridge";
+});
 
-        _ = services.AddHostedService<CreativeSignalRGBBridgeService>();
 
-        services.AddLogging(builder =>
-        {
-            builder.AddConfiguration(
-                context.Configuration.GetSection("Logging"));
-        });
-    });
+//LoggerProviderOptions.RegisterProviderOptions<
+//    EventLogSettings, EventLogLoggerProvider>(builder.Services);
+
+//builder.Services.AddSingleton(typeof(ILogger<CreativeSignalRGBBridgeService>), typeof(ILogger<CreativeSignalRGBBridgeService>));
+
+builder.Services.AddSingleton(typeof(DeviceManager<>), typeof(DeviceManager<>));
+builder.Services.AddHostedService<CreativeSignalRGBBridgeService>();
+
 
 var host = builder.Build();
+
 host.Run();
