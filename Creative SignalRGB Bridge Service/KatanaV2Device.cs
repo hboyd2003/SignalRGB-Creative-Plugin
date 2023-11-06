@@ -12,7 +12,7 @@ public partial class KatanaV2Device : CreativeDevice, ICreativeDevice
 {
     public sealed override string DeviceName { get; protected set; } = "Katana V2";
     public static string DeviceSelector => SerialDevice.GetDeviceSelectorFromUsbVidPid(Vid, Pid);
-    private readonly ILogger Logger;
+    private readonly ILogger _logger;
     
     [GeneratedRegex(@"(?<=\d{4}\\)[\w\d&]+")]
     // ReSharper disable once InconsistentNaming
@@ -22,17 +22,10 @@ public partial class KatanaV2Device : CreativeDevice, ICreativeDevice
     private const ushort Pid = 0x3260;
     private SerialDevice? _device;
     private DataWriter? _deviceWriter;
-    private int deleteme;
 
-    public KatanaV2Device(ILogger<CreativeSignalRGBBridgeService> Logger, DeviceInformation deviceInformation)
+    public KatanaV2Device(ILogger<CreativeSignalRGBBridgeService> logger, DeviceInformation deviceInformation)
     {
-        Logger?.LogError("Katana V2 Found!");
-        // We don't care what devices already exist until we want to connect
-        if (DeviceConnected)
-        {
-            Logger?.LogWarning("New device found while there is already a device connected/found");
-            return;
-        }
+        _logger = logger;
 
         DeviceInstancePath = deviceInformation.Id;
         DeviceName =
@@ -61,7 +54,7 @@ public partial class KatanaV2Device : CreativeDevice, ICreativeDevice
 
         if (!string.IsNullOrEmpty(UUID)) return;
         // Fallback serial number
-        Logger?.LogWarning("Could not find device serial number.\nUsing device instance instead");
+        logger?.LogWarning("Could not find device serial number.\nUsing device instance instead");
         UUID = UUIDRegex().Match((string)deviceInformation.Properties["System.Devices.DeviceInstanceId"]).Value;
     }
 
@@ -72,11 +65,6 @@ public partial class KatanaV2Device : CreativeDevice, ICreativeDevice
         if (_deviceWriter == null) return false;
 
         //TODO: Check if command sent successfully
-        if (deleteme < 5)
-        {
-            deleteme++;
-            Logger?.LogError("Sending command");
-        }
 
         _deviceWriter.WriteBytes(command);
         try
@@ -85,16 +73,10 @@ public partial class KatanaV2Device : CreativeDevice, ICreativeDevice
         }
         catch (Exception ex)
         {
-            Logger?.LogError(ex, "Failed to send command");
+            _logger?.LogError(ex, "Failed to send command to {DeviceName}", DeviceName);
             return false;
         }
-
-        if (deleteme < 5)
-        {
-            deleteme++;
-            Logger?.LogError("Sent command");
-        }
-
+        
         return true;
     }
 
@@ -108,7 +90,7 @@ public partial class KatanaV2Device : CreativeDevice, ICreativeDevice
     {
         if (DeviceConnected)
         {
-            Logger?.LogWarning("CreativeDevice unlock was called when it should not have been.");
+            _logger?.LogWarning("CreativeDevice unlock was called when it should not have been.");
             return false;
         }
 
@@ -132,9 +114,9 @@ public partial class KatanaV2Device : CreativeDevice, ICreativeDevice
         catch (Win32Exception ex)
         {
             if (ex.NativeErrorCode == 2) // File not found error code.
-                Logger?.LogError(ex, "Could not find cudsp600_firmware_utility.exe");
+                _logger?.LogError(ex, "Could not find cudsp600_firmware_utility.exe");
 
-            Logger?.LogError(ex, "Failed to run cudsp600_firmware_utility.exe");
+            _logger?.LogError(ex, "Failed to run cudsp600_firmware_utility.exe");
             return false;
         }
 
@@ -147,7 +129,7 @@ public partial class KatanaV2Device : CreativeDevice, ICreativeDevice
                     "unlock_comms [0]")) // Due to the programs poor logging there may be other random stuff before/after
                 return true;
 
-            Logger?.LogError("Failed to unlock device:\n\nOutput of cudsp600_firmware_utility.exe:\n" + processOutput);
+            _logger?.LogError("Failed to unlock {DeviceName}:\n\nOutput of cudsp600_firmware_utility.exe:\n{processOutput}", DeviceName, processOutput);
             return false;
         }
     }
@@ -159,24 +141,22 @@ public partial class KatanaV2Device : CreativeDevice, ICreativeDevice
         if (!await UnlockDevice()) return false;
 
         _device = await SerialDevice.FromIdAsync(DeviceInstancePath);
-        Logger?.LogError("Got serial port object");
 
 
         _deviceWriter = new DataWriter(_device.OutputStream);
-        Logger?.LogError("Opened serial port");
 
         //TODO: Check if device was actually connected.
         DeviceConnected = true;
 
-        Logger?.LogError("Turning on LEDs");
 
         // Turn on LEDs (if they are off)
         await SendCommandAsync(new byte[] { 0x5a, 0x3a, 0x02, 0x25, 0x01 });
         SendCommandAsync(new byte[] { 0x5a, 0x3a, 0x02, 0x26, 0x01 });
-        Logger?.LogError("Finished Connecting to device.");
 
         //var errorReceivedEventHandler = new Windows.Foundation.TypedEventHandler<SerialDevice, ErrorReceivedEventArgs>(this.ErrorReceivedEvent);
         //_device.ErrorReceived += errorReceivedEventHandler;
+
+        _logger.LogInformation("Successfully connected to {DeviceName}", DeviceName);
 
         return true;
     }
@@ -189,6 +169,7 @@ public partial class KatanaV2Device : CreativeDevice, ICreativeDevice
             {
                 _device?.Dispose();
                 DeviceConnected = false;
+                _logger.LogInformation("Disconnected from {DeviceName}", DeviceName);
                 return true;
             }
         }

@@ -9,10 +9,10 @@ public class DeviceManager<T> : IDeviceManager where T : CreativeDevice, ICreati
     public List<CreativeDevice> Devices { get; }
 
     private readonly DeviceWatcher _deviceWatcher;
-    private ILogger Logger;
+    private readonly ILogger _logger;
     public DeviceManager(ILogger<CreativeSignalRGBBridgeService> logger)
     {
-        Logger = logger;
+        _logger = logger;
         Devices = new List<CreativeDevice>();
         _deviceWatcher = DeviceInformation.CreateWatcher(T.DeviceSelector);
         _deviceWatcher.Added += DeviceAddedEvent;
@@ -22,14 +22,22 @@ public class DeviceManager<T> : IDeviceManager where T : CreativeDevice, ICreati
 
     private void DeviceRemovedEvent(DeviceWatcher sender, DeviceInformationUpdate deviceInfo)
     {
-        Devices.RemoveAll(device => device.Equals(deviceInfo));
+        var deviceToRemove = Devices.FirstOrDefault(device => device.Equals(deviceInfo));
+        if (deviceToRemove == null)
+        {
+            _logger.LogWarning("A matching device that just disconnected but does not exist in list of devices.");
+            return;
+        }
+        Devices.Remove(deviceToRemove);
+        _logger.LogInformation("Creative device {deviceToRemove.DeviceName} has disconnected", deviceToRemove.DeviceName);
     }
 
     private void DeviceAddedEvent(DeviceWatcher sender, DeviceInformation deviceInfo)
     {
         // Inefficient (uses reflection)
         // TODO: Use dependency injection instead of passing logger
-        var device = Activator.CreateInstance(typeof(T), Logger, deviceInfo) as T ?? throw new InvalidOperationException();
+        var device = Activator.CreateInstance(typeof(T), _logger, deviceInfo) as T ?? throw new InvalidOperationException();
         Devices.Add(device);
+        _logger.LogInformation("Creative device {device.DeviceName} has connected/discovered", device.DeviceName);
     }
 }

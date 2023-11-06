@@ -45,7 +45,7 @@
 							<File Id="BridgeJsFile" Source="$(var.SolutionDir)Creative PCIE Bridge.js" />
 							<File Id="BridgeQmlFile" Source="$(var.SolutionDir)Creative PCIE Bridge.qml" />
 							<RegistryValue Root="HKCU" Key="Software\Creative SignalRGB Bridge" Name="installed" Type="integer" Value="1" KeyPath="yes" />
-
+                            
 							<RemoveFile Id="RemoveBridgeJsFile" Name="Creative PCIE Bridge.js" On="uninstall" />
 							<RemoveFile Id="RemoveBridgeQmlFile" Name="Creative PCIE Bridge.qml" On="uninstall" />
 							<RemoveFolder Id="RemovePluginFolder" Directory="BridgeFolder" On="uninstall" />
@@ -66,6 +66,10 @@
                       Source="$(var.Creative_SignalRGB_Bridge_Service.ProjectDir)cudsp600_firmware_utility.exe"
                       KeyPath="false" />
 
+				<File Id="AppSettings"
+				      Source="$(var.Creative_SignalRGB_Bridge_Service.ProjectDir)appsettings.json"
+				      KeyPath="false" />
+				
                 <ServiceInstall Id="CreativeSignalRGBBridgeService"
                                 Type="ownProcess"
                                 Name="Creative SignalRGB Bridge"
@@ -84,6 +88,7 @@
 				<RemoveFile Id="ALLFILES" Name="*.*" On="both" />
 				<RemoveFile Id="FirmwareUtilityFile" Name="cudsp600_firmware_utility.exe" On="uninstall" />
 				<RemoveFile Id="CreativeSignalRGBBridgeFile" Name="CreativeSignalRGBBridge" On="uninstall" />
+                <RemoveFile Id="AppSettings" Name="appsettings.json" On="uninstall" />
             </Component>
         </DirectoryRef>
 

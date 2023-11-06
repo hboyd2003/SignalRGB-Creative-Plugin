@@ -29,15 +29,21 @@ using Microsoft.Extensions.Logging.EventLog;
 // Exit if not running as a windows service
 if (Environment.UserInteractive && !Debugger.IsAttached) return;
 
+
 var builder = Host.CreateApplicationBuilder(args);
 builder.Services.AddWindowsService(options =>
 {
     options.ServiceName = "Creative SignalRGB Bridge";
 });
+builder.Logging.ClearProviders();
+builder.Logging.SetMinimumLevel(LogLevel.Trace);
+
+builder.Logging.AddEventLog(config =>
+{
+    config.SourceName = "Creative SignalRGB Bridge";
+});
 
 
-//LoggerProviderOptions.RegisterProviderOptions<
-//    EventLogSettings, EventLogLoggerProvider>(builder.Services);
 
 //builder.Services.AddSingleton(typeof(ILogger<CreativeSignalRGBBridgeService>), typeof(ILogger<CreativeSignalRGBBridgeService>));
 

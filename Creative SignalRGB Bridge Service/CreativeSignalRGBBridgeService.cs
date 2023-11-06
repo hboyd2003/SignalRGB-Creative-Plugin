@@ -40,8 +40,7 @@ public class CreativeSignalRGBBridgeService : BackgroundService
             ae5DeviceManager,
             katanaDeviceManager
         };
-        this._logger = logger;
-
+        _logger = logger;
     }
 
 
@@ -50,7 +49,6 @@ public class CreativeSignalRGBBridgeService : BackgroundService
     {
         try
         {
-            //System.Diagnostics.Debugger.Launch();
             _listener = new UdpClient(ListenPort);
             var endPoint = new IPEndPoint(IPAddress.Broadcast, ListenPort);
 

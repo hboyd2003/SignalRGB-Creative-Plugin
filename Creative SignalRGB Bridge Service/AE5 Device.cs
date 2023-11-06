@@ -10,10 +10,10 @@ namespace CreativeSignalRGBBridge;
 // ReSharper disable once InconsistentNaming
 public partial class AE5_Device : CreativeDevice, ICreativeDevice
 {
-    public override string DeviceName { get; protected set; } = "SoundblasterX AE-5";
+    public sealed override string DeviceName { get; protected set; } = "SoundblasterX AE-5";
     public static readonly Guid InterfaceGuid = new("{c37acb87-d563-4aa0-b761-996e7864af79}");
     public static string DeviceSelector => CustomDevice.GetDeviceSelector(InterfaceGuid);
-    private ILogger Logger;
+    private readonly ILogger _logger;
 
     private CustomDevice? _device;
     [GeneratedRegex(@"(?<=\d{4}\\)[\w\d&]+")]
@@ -22,8 +22,7 @@ public partial class AE5_Device : CreativeDevice, ICreativeDevice
 
     public AE5_Device(ILogger<CreativeSignalRGBBridgeService> logger, DeviceInformation deviceInformation)
     {
-        Logger = logger;
-        Logger?.LogError("CreativeDevice Found!");
+        _logger = logger;
 
         DeviceInstancePath = deviceInformation.Id;
         UUID = UUIDRegex().Match((string)deviceInformation.Properties["System.Devices.DeviceInstanceId"]).Value;
@@ -47,14 +46,14 @@ public partial class AE5_Device : CreativeDevice, ICreativeDevice
         if (device.Count > 0)
             DeviceName = device[0].Name;
         else
-            Logger?.LogWarning("Unable to get device name from device");
+            _logger?.LogWarning("Unable to get device name from device.\nUsing default name of {DeviceName}", DeviceName);
     }
 
 
     public override async Task<bool> SendCommandAsync(byte[] command)
     {
         if (!DeviceConnected || _device == null) return false;
-        //Logger?.LogError("Sending Command!");
+
         var inputBuffer = CryptographicBuffer.CreateFromByteArray(command);
         var outputBuffer = new Buffer(1044);
         uint success;
@@ -64,18 +63,17 @@ public partial class AE5_Device : CreativeDevice, ICreativeDevice
         }
         catch (Exception)
         {
-            Logger?.LogError("Error sending command disconnecting!");
+            _logger?.LogError("Error sending command to {DeviceName}", DeviceName);
             _ = DisconnectFromDevice();
             return false;
         }
 
-        //Logger?.LogError("Sent command!");
+
         return success == 0;
     }
 
     public override async Task<bool> ConnectToDeviceAsync()
     {
-        Logger?.LogError("Connecting to the CreativeDevice!");
         if (DeviceConnected) return false;
 
         try
@@ -89,7 +87,7 @@ public partial class AE5_Device : CreativeDevice, ICreativeDevice
         }
 
         DeviceConnected = true;
-        Logger?.LogError("CreativeDevice connected!");
+        _logger.LogInformation("Successfully connected to {DeviceName}", DeviceName);
         return true;
     }
 
@@ -101,6 +99,7 @@ public partial class AE5_Device : CreativeDevice, ICreativeDevice
             {
                 _device = null;
                 DeviceConnected = false;
+                _logger.LogInformation("Disconnected from {DeviceName}", DeviceName);
                 return true;
             }
         }
