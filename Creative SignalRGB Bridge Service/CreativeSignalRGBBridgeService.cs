@@ -110,7 +110,7 @@ public class CreativeSignalRGBBridgeService : BackgroundService
                 foreach (var deviceManager in _deviceManagers)
                 {
                     CreativeDevice device;
-                    if ((device = deviceManager.Devices.Find(device => device.UUID.Equals(UUID))) is null) continue;
+                    if ((device = deviceManager.Devices.Find(deviceMatched => deviceMatched.UUID.Equals(UUID))!) is null) continue;
                     var bytes = Convert.FromBase64String(messageArray[3]);
                     device.SendCommandAsync(bytes);
 

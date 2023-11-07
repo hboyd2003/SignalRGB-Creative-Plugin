@@ -15,14 +15,10 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>
 
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
-using Windows.UI.Core;
 using CreativeSignalRGBBridge;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Configuration;
-using Microsoft.Extensions.Logging.EventLog;
 
 
 // TODO: Display warning to user that it is not running as a service and give option to continue

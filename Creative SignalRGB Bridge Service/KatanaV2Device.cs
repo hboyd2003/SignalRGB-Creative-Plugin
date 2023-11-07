@@ -10,7 +10,7 @@ namespace CreativeSignalRGBBridge;
 
 public partial class KatanaV2Device : CreativeDevice, ICreativeDevice
 {
-    public sealed override string DeviceName { get; protected set; } = "Katana V2";
+    public sealed override string DeviceName { get; protected set; }
     public static string DeviceSelector => SerialDevice.GetDeviceSelectorFromUsbVidPid(Vid, Pid);
     private readonly ILogger _logger;
     
@@ -54,7 +54,7 @@ public partial class KatanaV2Device : CreativeDevice, ICreativeDevice
 
         if (!string.IsNullOrEmpty(UUID)) return;
         // Fallback serial number
-        logger?.LogWarning("Could not find device serial number.\nUsing device instance instead");
+        logger.LogWarning("Could not find device serial number.\nUsing device instance instead");
         UUID = UUIDRegex().Match((string)deviceInformation.Properties["System.Devices.DeviceInstanceId"]).Value;
     }
 
@@ -73,7 +73,7 @@ public partial class KatanaV2Device : CreativeDevice, ICreativeDevice
         }
         catch (Exception ex)
         {
-            _logger?.LogError(ex, "Failed to send command to {DeviceName}", DeviceName);
+            _logger.LogError(ex, "Failed to send command to {DeviceName}", DeviceName);
             return false;
         }
         
@@ -90,7 +90,7 @@ public partial class KatanaV2Device : CreativeDevice, ICreativeDevice
     {
         if (DeviceConnected)
         {
-            _logger?.LogWarning("CreativeDevice unlock was called when it should not have been.");
+            _logger.LogWarning("CreativeDevice unlock was called when it should not have been.");
             return false;
         }
 
@@ -114,9 +114,9 @@ public partial class KatanaV2Device : CreativeDevice, ICreativeDevice
         catch (Win32Exception ex)
         {
             if (ex.NativeErrorCode == 2) // File not found error code.
-                _logger?.LogError(ex, "Could not find cudsp600_firmware_utility.exe");
+                _logger.LogError(ex, "Could not find cudsp600_firmware_utility.exe");
 
-            _logger?.LogError(ex, "Failed to run cudsp600_firmware_utility.exe");
+            _logger.LogError(ex, "Failed to run cudsp600_firmware_utility.exe");
             return false;
         }
 
@@ -129,7 +129,7 @@ public partial class KatanaV2Device : CreativeDevice, ICreativeDevice
                     "unlock_comms [0]")) // Due to the programs poor logging there may be other random stuff before/after
                 return true;
 
-            _logger?.LogError("Failed to unlock {DeviceName}:\n\nOutput of cudsp600_firmware_utility.exe:\n{processOutput}", DeviceName, processOutput);
+            _logger.LogError("Failed to unlock {DeviceName}:\n\nOutput of cudsp600_firmware_utility.exe:\n{processOutput}", DeviceName, processOutput);
             return false;
         }
     }

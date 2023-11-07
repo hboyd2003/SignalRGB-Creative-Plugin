@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Windows.Devices.Enumeration;
+﻿using Windows.Devices.Enumeration;
 using Microsoft.Extensions.Logging;
 
 namespace CreativeSignalRGBBridge;

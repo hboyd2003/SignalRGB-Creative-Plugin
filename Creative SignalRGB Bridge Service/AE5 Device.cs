@@ -46,7 +46,7 @@ public partial class AE5_Device : CreativeDevice, ICreativeDevice
         if (device.Count > 0)
             DeviceName = device[0].Name;
         else
-            _logger?.LogWarning("Unable to get device name from device.\nUsing default name of {DeviceName}", DeviceName);
+            _logger.LogWarning("Unable to get device name from device.\nUsing default name of {DeviceName}", DeviceName);
     }
 
 
@@ -63,7 +63,7 @@ public partial class AE5_Device : CreativeDevice, ICreativeDevice
         }
         catch (Exception)
         {
-            _logger?.LogError("Error sending command to {DeviceName}", DeviceName);
+            _logger.LogError("Error sending command to {DeviceName}", DeviceName);
             _ = DisconnectFromDevice();
             return false;
         }
