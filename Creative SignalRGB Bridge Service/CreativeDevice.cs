@@ -8,6 +8,7 @@ public abstract class CreativeDevice : IEquatable<DeviceInformationUpdate>
     public bool DeviceConnected { get; protected set; }
     public string UUID { get; protected set; }
 
+    public abstract string ProductUUID { get; }
     public abstract string DeviceName { get; protected set; }
     public abstract Task<bool> SendCommandAsync(byte[] command);
     public abstract Task<bool> ConnectToDeviceAsync();

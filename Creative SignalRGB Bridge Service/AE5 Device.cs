@@ -13,8 +13,9 @@ public partial class AE5_Device : CreativeDevice, ICreativeDevice
     public sealed override string DeviceName { get; protected set; } = "SoundblasterX AE-5";
     public static readonly Guid InterfaceGuid = new("{c37acb87-d563-4aa0-b761-996e7864af79}");
     public static string DeviceSelector => CustomDevice.GetDeviceSelector(InterfaceGuid);
-    private readonly ILogger _logger;
+    public override string ProductUUID { get; } = "AE5";
 
+    private readonly ILogger _logger;
     private CustomDevice? _device;
     [GeneratedRegex(@"(?<=\d{4}\\)[\w\d&]+")]
     // ReSharper disable once InconsistentNaming

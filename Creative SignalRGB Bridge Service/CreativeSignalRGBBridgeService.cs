@@ -94,7 +94,7 @@ public class CreativeSignalRGBBridgeService : BackgroundService
                 {
                     foreach (var device in deviceManager.Devices)
                     {
-                        responseBuilder.Append($"\n{device.DeviceName},{device.UUID}");
+                        responseBuilder.Append($"\n{device.ProductUUID},{device.DeviceName},{device.UUID}");
                         device.ConnectToDeviceAsync();
                     }
                 }

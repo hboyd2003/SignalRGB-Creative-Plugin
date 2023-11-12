@@ -27,7 +27,7 @@ discovery: readonly
 
 let creativePCIEDevice;
 var library = {
-    "Sound BlasterX AE-5":
+    "AE5":
     {
         InternalLEDCount: 5,
         LedPositions: [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0]],
@@ -48,7 +48,7 @@ var library = {
             ];
         }
     },
-    "Katana V2":
+    "KatanaV2":
     {
         InternalLEDCount: 7,
         LedPositions: [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0], [5, 0], [6, 0]],
@@ -110,7 +110,7 @@ class CreativePCIEDevice {
         }
         device.setControllableLeds(names, library[controller.name].LedPositions);
         //device.SetName(controller.name);
-        if (this.externalHeader) {
+        if (this.externalHeader) {1
             device.addChannel("External ARGB Header", this.ExternalLEDLimit);
         }
     }
@@ -239,7 +239,6 @@ export function DiscoveryService() {
 
         // Response should be "Creative SignalRGB Service" as first line followed by a command then devices (if needed).
         const response = value.response.toString().split("\n");
-        service.log(value.response.toString());
         if (response[0] !== "Creative SignalRGB Service") {
             // Recieved response can be from anything (Including itself!)
             return;
@@ -274,7 +273,8 @@ class CreativeService {
         this.lastSeen = Date.now();
         // Remove missing devices
         for (let device of this.devices) {
-            if (!foundDevices.includes(device.name)) {
+            idk += device.id + ", ";
+            if (!foundDevices.some(str => str.includes(device.id))) {
                 service.log(`Device (controller) ${device.name} is no longer connected, removing!`);
                 this.devices.splice(this.devices.indexOf(device), 1);
                 service.removeController(device);
@@ -285,10 +285,10 @@ class CreativeService {
         for (let foundDevice of foundDevices) {
             const deviceInfo = foundDevice.split(",");
             service.log(foundDevice);
-            if (!this.devices.find(e => e.name === deviceInfo[0])) {
+            if (!this.devices.find(e => e.id === deviceInfo[2])) {
                 // Create and add new device (controller).
 
-                service.log(`Adding new device: ${deviceInfo[0]}`);
+                service.log(`Adding new device: ${deviceInfo[1]}`);
                 const creativePCIEBridge = new CreativePCIEBridge(deviceInfo);
                 this.devices.push(creativePCIEBridge);
                 service.addController(creativePCIEBridge);
@@ -314,10 +314,11 @@ class CreativeService {
 class CreativePCIEBridge {
     constructor(deviceInfo) {
         service.log(deviceInfo[1]);
-        this.id = deviceInfo[1];
+        this.id = deviceInfo[2];
+        this.productUUID = deviceInfo[0];
         this.ip = "127.0.0.1";
         this.port = 12346;
-        this.name = deviceInfo[0];
+        this.name = deviceInfo[1];
         this.logoURL = library[deviceInfo[0]].LogoURL; // Logo for the device in the Service pane.
     }
 

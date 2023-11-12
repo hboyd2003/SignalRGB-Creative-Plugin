@@ -12,7 +12,7 @@ public partial class KatanaV2Device : CreativeDevice, ICreativeDevice
 {
     public sealed override string DeviceName { get; protected set; }
     public static string DeviceSelector => SerialDevice.GetDeviceSelectorFromUsbVidPid(Vid, Pid);
-    private readonly ILogger _logger;
+    public override string ProductUUID { get; } = "KatanaV2";
     
     [GeneratedRegex(@"(?<=\d{4}\\)[\w\d&]+")]
     // ReSharper disable once InconsistentNaming
@@ -22,6 +22,7 @@ public partial class KatanaV2Device : CreativeDevice, ICreativeDevice
     private const ushort Pid = 0x3260;
     private SerialDevice? _device;
     private DataWriter? _deviceWriter;
+    private readonly ILogger _logger;
 
     public KatanaV2Device(ILogger<CreativeSignalRGBBridgeService> logger, DeviceInformation deviceInformation)
     {
