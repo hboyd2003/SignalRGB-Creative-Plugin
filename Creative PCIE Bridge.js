@@ -74,8 +74,10 @@ var library = {
 // Called when a new controller is created by the Discovery Service.
 export function Initialize() {
     device.log("INIT");
+    
     device.setName(controller.name);
-    device.logoURL = library[controller.name].LogoURL;
+
+    device.logoURL = library[controller.productUUID].LogoURL;
     device.addFeature("udp");
     device.addFeature("base64");
 
@@ -94,23 +96,22 @@ export function Render() {
 //Represents each individual device.
 class CreativePCIEDevice {
     constructor(controller) {
-        device.log(controller.name);
         this.id = controller.id;
         this.name = controller.name;
-        this.internalLEDCount = library[controller.name].InternalLEDCount;
-        this.externalHeader = library[controller.name].ExternalHeader;
-        this.ExternalLEDLimit = library[controller.name].ExternalLEDLimit;
-        device.setImageFromUrl(library[controller.name].ImageURL);
-        this.flippedRGB = library[controller.name].FlippedRGB;
+        this.internalLEDCount = library[controller.productUUID].InternalLEDCount;
+        this.externalHeader = library[controller.productUUID].ExternalHeader;
+        this.ExternalLEDLimit = library[controller.productUUID].ExternalLEDLimit;
+        device.setImageFromUrl(library[controller.productUUID].ImageURL);
+        this.flippedRGB = library[controller.productUUID].FlippedRGB;
         device.SetLedLimit(this.ExternalLEDLimit);
-        device.setSize(library[controller.name].Size);
+        device.setSize(library[controller.productUUID].Size);
         const names = [];
         for (let i = 0; i < this.internalLEDCount; i++) {
             names.push(`Led ${i}`);
         }
-        device.setControllableLeds(names, library[controller.name].LedPositions);
+        device.setControllableLeds(names, library[controller.productUUID].LedPositions);
         //device.SetName(controller.name);
-        if (this.externalHeader) {1
+        if (this.externalHeader) {
             device.addChannel("External ARGB Header", this.ExternalLEDLimit);
         }
     }
@@ -130,7 +131,7 @@ class CreativePCIEDevice {
     }
 
     createInternalRGBPacket() {
-        const header = library[controller.name].GetHeader(this.internalLEDCount, false);
+        const header = library[controller.productUUID].GetHeader(this.internalLEDCount, false);
         const colors = [];
         for (let i = 0; i < this.internalLEDCount; i++) {
             const color = device.color(i, 0);
@@ -139,19 +140,13 @@ class CreativePCIEDevice {
             colors.push(color[2]);
         }
 
-        let logcolors = "[";
-        for (let value of this.createPacket(header, colors, this.internalLEDCount)) {
-            logcolors += value + ", ";
-        }
-        logcolors += "]";
-        //device.log(logcolors);
         return this.createPacket(header, colors, this.internalLEDCount);
 
     }
 
     createExternalRGBPacket() {
         const ledCount = device.channel("External ARGB Header").LedCount();
-        const header = library[controller.name].GetHeader(ledCount, true);
+        const header = library[controller.productUUID].GetHeader(ledCount, true);
         const colors = device.channel("External ARGB Header").getColors("Inline", "RGB");
 
         return this.createPacket(header, colors, ledCount);
