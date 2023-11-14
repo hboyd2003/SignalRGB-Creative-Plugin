@@ -17,7 +17,7 @@ public partial class AE5_Device : CreativeDevice, ICreativeDevice
 
     private readonly ILogger _logger;
     private CustomDevice? _device;
-    [GeneratedRegex(@"(?<=\d{4}\\)[\w\d&]+")]
+    [GeneratedRegex(@"[\w\d&]+$")]
     // ReSharper disable once InconsistentNaming
     private static partial Regex UUIDRegex();
 
@@ -40,10 +40,13 @@ public partial class AE5_Device : CreativeDevice, ICreativeDevice
             "System.Devices.LocationPaths",
             "System.Devices.Children"
         };
-        var device = DeviceInformation.FindAllAsync(
+        var deviceTask = DeviceInformation.FindAllAsync(
             $"System.Devices.DeviceInstanceId:=\"{deviceInformation.Properties["System.Devices.DeviceInstanceId"]}\"",
             propertiesToQuery,
-            DeviceInformationKind.Device).GetResults();
+            DeviceInformationKind.Device).AsTask();
+        deviceTask.Wait();
+        var device = deviceTask.Result;
+
         if (device.Count > 0)
             DeviceName = device[0].Name;
         else

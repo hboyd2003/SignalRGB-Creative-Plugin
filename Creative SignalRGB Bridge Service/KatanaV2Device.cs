@@ -5,6 +5,7 @@ using Windows.Devices.Enumeration;
 using Windows.Devices.SerialCommunication;
 using Windows.Storage.Streams;
 using Microsoft.Extensions.Logging;
+using WinRT;
 
 namespace CreativeSignalRGBBridge;
 
@@ -14,7 +15,7 @@ public partial class KatanaV2Device : CreativeDevice, ICreativeDevice
     public static string DeviceSelector => SerialDevice.GetDeviceSelectorFromUsbVidPid(Vid, Pid);
     public override string ProductUUID { get; } = "KatanaV2";
     
-    [GeneratedRegex(@"(?<=\d{4}\\)[\w\d&]+")]
+    [GeneratedRegex(@"[\w\d&]+$")]
     // ReSharper disable once InconsistentNaming
     private static partial Regex UUIDRegex();
 
@@ -43,10 +44,12 @@ public partial class KatanaV2Device : CreativeDevice, ICreativeDevice
             "System.Devices.DeviceInstanceId",
             "System.Devices.Parent"
         };
-        var device = DeviceInformation.FindAllAsync(
+        var deviceTask = DeviceInformation.FindAllAsync(
             $"System.Devices.DeviceInstanceId:=\"{deviceInformation.Properties["System.Devices.DeviceInstanceId"]}\"",
             propertiesToQuery,
-            DeviceInformationKind.Device).GetResults();
+            DeviceInformationKind.Device).AsTask();
+        deviceTask.Wait();
+        var device = deviceTask.Result;
 
         UUID = device.Count >= 1
             ? UUIDRegex().Match((string)device[0].Properties["System.Devices.Parent"]).Value
