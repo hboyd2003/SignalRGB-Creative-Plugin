@@ -149,8 +149,7 @@ public partial class KatanaV2Device : CreativeDevice, ICreativeDevice
 
         _deviceWriter = new DataWriter(_device.OutputStream);
 
-        //TODO: Check if device was actually connected.
-        DeviceConnected = true;
+
 
 
         // Turn on LEDs (if they are off)
@@ -160,8 +159,9 @@ public partial class KatanaV2Device : CreativeDevice, ICreativeDevice
         //var errorReceivedEventHandler = new Windows.Foundation.TypedEventHandler<SerialDevice, ErrorReceivedEventArgs>(this.ErrorReceivedEvent);
         //_device.ErrorReceived += errorReceivedEventHandler;
 
+        //TODO: Check if device was actually connected.
+        DeviceConnected = true;
         _logger.LogInformation("Successfully connected to {DeviceName}", DeviceName);
-
         return true;
     }
 
