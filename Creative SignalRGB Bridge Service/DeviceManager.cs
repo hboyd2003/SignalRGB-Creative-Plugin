@@ -28,7 +28,7 @@ public class DeviceManager<T> : IDeviceManager where T : CreativeDevice, ICreati
             return;
         }
         Devices.Remove(deviceToRemove);
-        _logger.LogInformation("Creative device {deviceToRemove.DeviceName} has disconnected", deviceToRemove.DeviceName);
+        _logger.LogInformation("Creative device {deviceToRemove.DeviceName} has disconnected from the computer", deviceToRemove.DeviceName);
     }
 
     private void DeviceAddedEvent(DeviceWatcher sender, DeviceInformation deviceInfo)
@@ -37,6 +37,6 @@ public class DeviceManager<T> : IDeviceManager where T : CreativeDevice, ICreati
         // TODO: Use dependency injection instead of passing logger
         var device = Activator.CreateInstance(typeof(T), _logger, deviceInfo) as T ?? throw new InvalidOperationException();
         Devices.Add(device);
-        _logger.LogInformation("Creative device {device.DeviceName} has connected/discovered", device.DeviceName);
+        _logger.LogInformation("Discovered Creative device {device.DeviceName}", device.DeviceName);
     }
 }

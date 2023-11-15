@@ -161,7 +161,7 @@ public partial class KatanaV2Device : CreativeDevice, ICreativeDevice
 
         //TODO: Check if device was actually connected.
         DeviceConnected = true;
-        _logger.LogInformation("Successfully connected to {DeviceName}", DeviceName);
+        _logger.LogInformation("Plugin successfully connected to {DeviceName}", DeviceName);
         return true;
     }
 
@@ -173,7 +173,7 @@ public partial class KatanaV2Device : CreativeDevice, ICreativeDevice
             {
                 _device?.Dispose();
                 DeviceConnected = false;
-                _logger.LogInformation("Disconnected from {DeviceName}", DeviceName);
+                _logger.LogInformation("Plugin disconnected from {DeviceName}", DeviceName);
                 return true;
             }
         }

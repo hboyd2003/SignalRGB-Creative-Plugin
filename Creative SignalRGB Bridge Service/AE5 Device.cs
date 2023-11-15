@@ -91,7 +91,7 @@ public partial class AE5_Device : CreativeDevice, ICreativeDevice
         }
 
         DeviceConnected = true;
-        _logger.LogInformation("Successfully connected to {DeviceName}", DeviceName);
+        _logger.LogInformation("Plugin successfully connected to {DeviceName}", DeviceName);
         return true;
     }
 
@@ -103,7 +103,7 @@ public partial class AE5_Device : CreativeDevice, ICreativeDevice
             {
                 _device = null;
                 DeviceConnected = false;
-                _logger.LogInformation("Disconnected from {DeviceName}", DeviceName);
+                _logger.LogInformation("Plugin disconnected from {DeviceName}", DeviceName);
                 return true;
             }
         }
