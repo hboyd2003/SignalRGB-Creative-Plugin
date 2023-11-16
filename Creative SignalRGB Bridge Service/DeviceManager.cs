@@ -1,10 +1,12 @@
-﻿using Windows.Devices.Enumeration;
+﻿using System.Diagnostics.CodeAnalysis;
+using Windows.Devices.Enumeration;
 using Microsoft.Extensions.Logging;
 
 namespace CreativeSignalRGBBridge;
 
-public class DeviceManager<T> : IDeviceManager where T : CreativeDevice, ICreativeDevice
+public class DeviceManager<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]  T> : IDeviceManager where T : CreativeDevice, ICreativeDevice
 {
+
     public List<CreativeDevice> Devices { get; }
 
     private readonly DeviceWatcher _deviceWatcher;

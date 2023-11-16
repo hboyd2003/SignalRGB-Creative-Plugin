@@ -5,7 +5,6 @@ using Windows.Devices.Enumeration;
 using Windows.Devices.SerialCommunication;
 using Windows.Storage.Streams;
 using Microsoft.Extensions.Logging;
-using WinRT;
 
 namespace CreativeSignalRGBBridge;
 
