@@ -3,7 +3,6 @@ using System.Diagnostics;
 using System.Text.RegularExpressions;
 using Windows.Devices.Enumeration;
 using Windows.Devices.SerialCommunication;
-using Windows.Storage.Streams;
 using Microsoft.Extensions.Logging;
 using System.IO.Ports;
 
@@ -19,11 +18,10 @@ public partial class KatanaV2Device : CreativeDevice, ICreativeDevice
     // ReSharper disable once InconsistentNaming
     private static partial Regex UUIDRegex();
 
-    private const ushort Vid = 0x041E; //0x041E
-    private const ushort Pid = 0x3260; //0x3260
+    private const ushort Vid = 0x041E;
+    private const ushort Pid = 0x3260;
     private SerialPort? _device;
     private readonly ILogger _logger;
-    private bool writingToDevice = false;
 
     public KatanaV2Device(ILogger<CreativeSignalRGBBridgeService> logger, DeviceInformation deviceInformation)
     {
@@ -65,7 +63,7 @@ public partial class KatanaV2Device : CreativeDevice, ICreativeDevice
 
     public override async Task<bool> SendCommandAsync(byte[] command)
     {
-        if (_device is not { IsOpen: true } || !DeviceConnected || writingToDevice)
+        if (_device is not { IsOpen: true } || !DeviceConnected)
         {
             _logger.LogWarning("Command was sent to {DeviceName} when it should not have been.", DeviceName);
             return false;
@@ -73,17 +71,14 @@ public partial class KatanaV2Device : CreativeDevice, ICreativeDevice
         //TODO: Check if command sent successfully  
         try
         {
-            writingToDevice = true;
             _device.Write(command, 0, command.Length);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to send command to {DeviceName}", DeviceName);
-            writingToDevice = false;
             return false;
         }
 
-        writingToDevice = false;
         return true;
     }
 
@@ -152,8 +147,9 @@ public partial class KatanaV2Device : CreativeDevice, ICreativeDevice
         _device.Open();
 
         DeviceConnected = true;
-        // Turn on LEDs (if they are off)
+        // Switch mode
         await SendCommandAsync("SW_MODE1\r\n"u8.ToArray());
+        // Turn on LEDs (if they are off)
         await SendCommandAsync(new byte[] { 0x5a, 0x3a, 0x02, 0x25, 0x01 });
         SendCommandAsync(new byte[] { 0x5a, 0x3a, 0x02, 0x26, 0x01 });
 
