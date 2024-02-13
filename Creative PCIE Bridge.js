@@ -1,6 +1,6 @@
 export function Name() { return "Creative PCIE"; }
 
-export function Version() { return "0.7.5"; }
+export function Version() { return "2.0.0"; }
 
 export function Type() { return "network"; }
 
