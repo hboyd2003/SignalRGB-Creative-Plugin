@@ -5,6 +5,7 @@ using Windows.Devices.Enumeration;
 using Windows.Devices.SerialCommunication;
 using Windows.Storage.Streams;
 using Microsoft.Extensions.Logging;
+using System.IO.Ports;
 
 namespace CreativeSignalRGBBridge;
 
@@ -18,16 +19,15 @@ public partial class KatanaV2Device : CreativeDevice, ICreativeDevice
     // ReSharper disable once InconsistentNaming
     private static partial Regex UUIDRegex();
 
-    private const ushort Vid = 0x041E;
-    private const ushort Pid = 0x3260;
-    private SerialDevice? _device;
-    private DataWriter? _deviceWriter;
+    private const ushort Vid = 0x041E; //0x041E
+    private const ushort Pid = 0x3260; //0x3260
+    private SerialPort? _device;
     private readonly ILogger _logger;
+    private bool writingToDevice = false;
 
     public KatanaV2Device(ILogger<CreativeSignalRGBBridgeService> logger, DeviceInformation deviceInformation)
     {
         _logger = logger;
-
         DeviceInstancePath = deviceInformation.Id;
         DeviceName =
             deviceInformation
@@ -65,29 +65,29 @@ public partial class KatanaV2Device : CreativeDevice, ICreativeDevice
 
     public override async Task<bool> SendCommandAsync(byte[] command)
     {
-        if (_deviceWriter == null) return false;
-
-        //TODO: Check if command sent successfully
-
-        _deviceWriter.WriteBytes(command);
+        if (_device is not { IsOpen: true } || !DeviceConnected || writingToDevice)
+        {
+            _logger.LogWarning("Command was sent to {DeviceName} when it should not have been.", DeviceName);
+            return false;
+        }
+        //TODO: Check if command sent successfully  
         try
         {
-            await _deviceWriter.StoreAsync();
+            writingToDevice = true;
+            _device.Write(command, 0, command.Length);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to send command to {DeviceName}", DeviceName);
+            writingToDevice = false;
             return false;
         }
-        
+
+        writingToDevice = false;
         return true;
     }
 
 
-    private void ErrorReceivedEvent(SerialDevice sender, ErrorReceivedEventArgs eventArgs)
-    {
-        DisconnectFromDevice();
-    }
 
     public async Task<bool> UnlockDevice()
     {
@@ -142,24 +142,24 @@ public partial class KatanaV2Device : CreativeDevice, ICreativeDevice
         if (DeviceConnected) return false;
 
         if (!await UnlockDevice()) return false;
+        
+        // Since we need to use the Win32 we need the port name and the only way (if using the device watcher) is to open the device using the WinRT API (which won't work for commands since we are not uwp)
+        SerialDevice tempDevice = await SerialDevice.FromIdAsync(DeviceInstancePath);
+        string portName = tempDevice.PortName;
+        tempDevice.Dispose(); // Close device opened with  WinRT
 
-        _device = await SerialDevice.FromIdAsync(DeviceInstancePath);
+        _device = new SerialPort(portName);
+        _device.Open();
 
-
-        _deviceWriter = new DataWriter(_device.OutputStream);
-
-
-
-
+        DeviceConnected = true;
         // Turn on LEDs (if they are off)
+        await SendCommandAsync("SW_MODE1\r\n"u8.ToArray());
         await SendCommandAsync(new byte[] { 0x5a, 0x3a, 0x02, 0x25, 0x01 });
         SendCommandAsync(new byte[] { 0x5a, 0x3a, 0x02, 0x26, 0x01 });
 
-        //var errorReceivedEventHandler = new Windows.Foundation.TypedEventHandler<SerialDevice, ErrorReceivedEventArgs>(this.ErrorReceivedEvent);
-        //_device.ErrorReceived += errorReceivedEventHandler;
 
         //TODO: Check if device was actually connected.
-        DeviceConnected = true;
+        
         _logger.LogInformation("Plugin successfully connected to {DeviceName}", DeviceName);
         return true;
     }

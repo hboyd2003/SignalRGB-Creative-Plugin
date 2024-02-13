@@ -54,7 +54,7 @@ public class CreativeSignalRGBBridgeService : BackgroundService
 
             while (!stoppingToken.IsCancellationRequested)
             {
-                HandleReceivedMessage(_listener.Receive(ref endPoint));
+                HandleReceivedMessageAsync(_listener.Receive(ref endPoint));
             }
         }
         catch (TaskCanceledException)
@@ -70,7 +70,7 @@ public class CreativeSignalRGBBridgeService : BackgroundService
     }
 
 
-    private void HandleReceivedMessage(byte[] udpMessage)
+    private async Task HandleReceivedMessageAsync(byte[] udpMessage)
     {
         //---Message Format---
         // Line 0: Header/Identification (Creative SignalRGB Service or Creative SignalRGB Plugin)
@@ -95,7 +95,7 @@ public class CreativeSignalRGBBridgeService : BackgroundService
                     foreach (var device in deviceManager.Devices)
                     {
                         responseBuilder.Append($"\n{device.ProductUUID},{device.DeviceName},{device.UUID}");
-                        device.ConnectToDeviceAsync();
+                        await device.ConnectToDeviceAsync();
                     }
                 }
 

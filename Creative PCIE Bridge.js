@@ -37,6 +37,7 @@ var library = {
         FlippedRGB: false,
         ImageURL: "https://img.creative.com/images/products/large/pdt_23095.1.png",
         LogoURL: "https://img.creative.com/soundblaster/blasterx/images/logo_ae5pe.png",
+        AlphaAtBeginning: false,
         GetHeader: function(ledCount, isExternal) {
             return [
                 isExternal ? 0x02 : 0x03, //Internal = 3, External = 2
@@ -58,13 +59,14 @@ var library = {
         FlippedRGB: true,
         ImageURL: "https://img.creative.com/images/products/large/pdt_23766.png",
         LogoURL: "https://img.creative.com/inline/products/23766/logo-katana-v2.png",
+        AlphaAtBeginning: true,
         GetHeader: function(ledCount, isExternal) {
             return [
                 0x5a, // Magic byte
                 0x3a, // LED command
                 0x20, // Command length (after this)
                 0x2b, // Set LEDs Sub-command
-                0x00, 0x01, 0x01, 0xff
+                0x00, 0x01, 0x01
             ];
         }
     }
@@ -89,6 +91,7 @@ export function Shutdown() {
 }
 
 export function Render() {
+    
     creativePCIEDevice.sendColors(); // Internal RGB
 }
 
@@ -103,6 +106,7 @@ class CreativePCIEDevice {
         this.ExternalLEDLimit = library[controller.productUUID].ExternalLEDLimit;
         device.setImageFromUrl(library[controller.productUUID].ImageURL);
         this.flippedRGB = library[controller.productUUID].FlippedRGB;
+        this.alphaAtBeginning = library[controller.productUUID].AlphaAtBeginning;
         device.SetLedLimit(this.ExternalLEDLimit);
         device.setSize(library[controller.productUUID].Size);
         const names = [];
@@ -117,18 +121,19 @@ class CreativePCIEDevice {
     }
 
     sendColors() {
-        //device.log("Sending colors to " + controller.ip + " with the name of " + this.name);
-        udp.send(controller.ip,
-            controller.port,
-            `Creative Bridge Plugin\nSETRGB\n${this.id}\n${base64.Encode(creativePCIEDevice.createInternalRGBPacket())
-            }`);
-        if (this.externalHeader) {
+            //device.log("Sending colors to " + controller.ip + " with the name of " + this.name);
             udp.send(controller.ip,
                 controller.port,
                 `Creative Bridge Plugin\nSETRGB\n${this.id}\n${base64.Encode(
-                    creativePCIEDevice.createExternalRGBPacket())}`);
+                    creativePCIEDevice.createInternalRGBPacket())
+                }`);
+            if (this.externalHeader) {
+                udp.send(controller.ip,
+                    controller.port,
+                    `Creative Bridge Plugin\nSETRGB\n${this.id}\n${base64.Encode(
+                        creativePCIEDevice.createExternalRGBPacket())}`);
+            }
         }
-    }
 
     createInternalRGBPacket() {
         const header = library[controller.productUUID].GetHeader(this.internalLEDCount, false);
@@ -153,19 +158,21 @@ class CreativePCIEDevice {
     }
 
     createPacket(header, colors, ledCount) {
+        const totalCommandLength = (ledCount * 4) + header.length;
+        const packet = new Array(totalCommandLength).fill(0); // Initializes the array with zeroes
 
-        const packet = new Array(1044).fill(0); // Initializes the array with zeroes
         header.forEach((value, index) => {
             packet[index] = value;
         });
         for (let i = 0; i < ledCount; i++) {
 
-            const commandPos = i * 4;
+            const commandPos = header.length + (i * 4);
             const colorPos = i * 3;
-            packet[header.length + commandPos] = colors[colorPos + (this.flippedRGB ? 2 : 0)]; //Red or Blue
-            packet[header.length + commandPos + 1] = colors[colorPos + 1]; //Green
-            packet[header.length + commandPos + 2] = colors[colorPos + (this.flippedRGB ? 0 : 2)]; //Blue or Red
-            packet[header.length + commandPos + 3] = 0xFF; //Alpha
+
+            packet[commandPos + (this.alphaAtBeginning ? 1 : 0)] = colors[colorPos + (this.flippedRGB ? 2 : 0)]; //Red or Blue
+            packet[commandPos + (this.alphaAtBeginning ? 1 : 0) + 1] = colors[colorPos + 1]; //Green
+            packet[commandPos + (this.alphaAtBeginning ? 1 : 0) + 2] = colors[colorPos + (this.flippedRGB ? 0 : 2)]; //Blue or Red
+            packet[commandPos + (this.alphaAtBeginning ? 0 : 3)] = 0xFF; //Alpha
         }
         //device.log(logstring + "]")
         return packet;

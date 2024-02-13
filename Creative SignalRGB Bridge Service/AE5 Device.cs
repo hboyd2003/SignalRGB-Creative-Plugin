@@ -57,7 +57,8 @@ public partial class AE5_Device : CreativeDevice, ICreativeDevice
     public override async Task<bool> SendCommandAsync(byte[] command)
     {
         if (!DeviceConnected || _device == null) return false;
-
+        byte[] paddedCommand = new byte[1044];
+        command.CopyTo(paddedCommand, 0);
         var inputBuffer = CryptographicBuffer.CreateFromByteArray(command);
         var outputBuffer = new Buffer(1044);
         uint success;
