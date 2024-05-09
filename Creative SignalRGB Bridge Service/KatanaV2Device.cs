@@ -16,20 +16,23 @@
 
 using System.ComponentModel;
 using System.Diagnostics;
+using System.IO.Ports;
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.Logging;
 using Windows.Devices.Enumeration;
 using Windows.Devices.SerialCommunication;
-using Microsoft.Extensions.Logging;
-using System.IO.Ports;
 
 namespace CreativeSignalRGBBridge;
 
 public partial class KatanaV2Device : CreativeDevice, ICreativeDevice
 {
-    public sealed override string DeviceName { get; protected set; }
+    public override sealed string DeviceName
+    {
+        get; protected set;
+    }
     public static string DeviceSelector => SerialDevice.GetDeviceSelectorFromUsbVidPid(Vid, Pid);
     public override string ProductUUID { get; } = "KatanaV2";
-    
+
     [GeneratedRegex(@"[\w\d&]+$")]
     // ReSharper disable once InconsistentNaming
     private static partial Regex UUIDRegex();
@@ -77,7 +80,7 @@ public partial class KatanaV2Device : CreativeDevice, ICreativeDevice
 
 
 
-    public override async Task<bool> SendCommandAsync(byte[] command)
+    public async override Task<bool> SendCommandAsync(byte[] command)
     {
         if (_device is not { IsOpen: true } || !DeviceConnected)
         {
@@ -148,15 +151,15 @@ public partial class KatanaV2Device : CreativeDevice, ICreativeDevice
         }
     }
 
-    public override async Task<bool> ConnectToDeviceAsync()
+    public async override Task<bool> ConnectToDeviceAsync()
     {
         if (DeviceConnected) return false;
 
         if (!await UnlockDevice()) return false;
-        
+
         // Since we need to use the Win32 we need the port name and the only way (if using the device watcher) is to open the device using the WinRT API (which won't work for commands since we are not uwp)
-        SerialDevice tempDevice = await SerialDevice.FromIdAsync(DeviceInstancePath);
-        string portName = tempDevice.PortName;
+        var tempDevice = await SerialDevice.FromIdAsync(DeviceInstancePath);
+        var portName = tempDevice.PortName;
         tempDevice.Dispose(); // Close device opened with  WinRT
 
         _device = new SerialPort(portName);
@@ -171,7 +174,7 @@ public partial class KatanaV2Device : CreativeDevice, ICreativeDevice
 
 
         //TODO: Check if device was actually connected.
-        
+
         _logger.LogInformation("Plugin successfully connected to {DeviceName}", DeviceName);
         return true;
     }

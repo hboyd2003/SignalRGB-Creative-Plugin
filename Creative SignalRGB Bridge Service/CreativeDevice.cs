@@ -20,27 +20,38 @@ namespace CreativeSignalRGBBridge;
 
 public abstract class CreativeDevice : IEquatable<DeviceInformationUpdate>
 {
-    public string DeviceInstancePath { get; protected set; }
-    public bool DeviceConnected { get; protected set; }
-    public string UUID { get; protected set; }
+    public string? DeviceInstancePath
+    {
+        get; protected set;
+    }
+    public bool DeviceConnected
+    {
+        get; protected set;
+    }
+    public string? UUID
+    {
+        get; protected set;
+    }
 
-    public abstract string ProductUUID { get; }
-    public abstract string DeviceName { get; protected set; }
+    public abstract string ProductUUID
+    {
+        get;
+    }
+    public abstract string DeviceName
+    {
+        get; protected set;
+    }
     public abstract Task<bool> SendCommandAsync(byte[] command);
     public abstract Task<bool> ConnectToDeviceAsync();
     public abstract bool DisconnectFromDevice();
+
 
     public bool Equals(DeviceInformationUpdate? other)
     {
         return other != null && other.Id.Equals(DeviceInstancePath);
     }
 
-
-
-    public override bool Equals(object? obj)
-    {
-        return Equals(obj as CreativeDevice);
-    }
+    public override bool Equals(object? obj) => Equals(obj as CreativeDevice);
 
     public bool Equals(CreativeDevice? device)
     {
@@ -52,10 +63,7 @@ public abstract class CreativeDevice : IEquatable<DeviceInformationUpdate>
     }
 
 
-    public override int GetHashCode()
-    {
-        return DeviceInstancePath.GetHashCode();
-    }
+    public override int GetHashCode() => DeviceInstancePath.GetHashCode();
 
     public static implicit operator CreativeDevice(bool v)
     {

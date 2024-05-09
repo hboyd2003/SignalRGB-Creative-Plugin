@@ -15,10 +15,10 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>
 
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.Logging;
 using Windows.Devices.Custom;
 using Windows.Devices.Enumeration;
 using Windows.Security.Cryptography;
-using Microsoft.Extensions.Logging;
 using Buffer = Windows.Storage.Streams.Buffer;
 
 namespace CreativeSignalRGBBridge;
@@ -26,7 +26,7 @@ namespace CreativeSignalRGBBridge;
 // ReSharper disable once InconsistentNaming
 public partial class AE5_Device : CreativeDevice, ICreativeDevice
 {
-    public sealed override string DeviceName { get; protected set; } = "SoundblasterX AE-5";
+    public override sealed string DeviceName { get; protected set; } = "SoundblasterX AE-5";
     public static readonly Guid InterfaceGuid = new("{c37acb87-d563-4aa0-b761-996e7864af79}");
     public static string DeviceSelector => CustomDevice.GetDeviceSelector(InterfaceGuid);
     public override string ProductUUID { get; } = "AE5";
@@ -70,10 +70,10 @@ public partial class AE5_Device : CreativeDevice, ICreativeDevice
     }
 
 
-    public override async Task<bool> SendCommandAsync(byte[] command)
+    public async override Task<bool> SendCommandAsync(byte[] command)
     {
         if (!DeviceConnected || _device == null) return false;
-        byte[] paddedCommand = new byte[1044];
+        var paddedCommand = new byte[1044];
         command.CopyTo(paddedCommand, 0);
         var inputBuffer = CryptographicBuffer.CreateFromByteArray(command);
         var outputBuffer = new Buffer(1044);
@@ -93,7 +93,7 @@ public partial class AE5_Device : CreativeDevice, ICreativeDevice
         return success == 0;
     }
 
-    public override async Task<bool> ConnectToDeviceAsync()
+    public async override Task<bool> ConnectToDeviceAsync()
     {
         if (DeviceConnected) return false;
 

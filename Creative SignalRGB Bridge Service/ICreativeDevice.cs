@@ -14,10 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>
 
-namespace CreativeSignalRGBBridge
+namespace CreativeSignalRGBBridge;
+
+public interface ICreativeDevice
 {
-    public interface ICreativeDevice
+    public static abstract string DeviceSelector
     {
-        public static abstract string DeviceSelector { get; }
+        get;
     }
 }

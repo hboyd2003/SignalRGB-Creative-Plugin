@@ -15,15 +15,18 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>
 
 using System.Diagnostics.CodeAnalysis;
-using Windows.Devices.Enumeration;
 using Microsoft.Extensions.Logging;
+using Windows.Devices.Enumeration;
 
 namespace CreativeSignalRGBBridge;
 
-public class DeviceManager<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]  T> : IDeviceManager where T : CreativeDevice, ICreativeDevice
+public class DeviceManager<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T> : IDeviceManager where T : CreativeDevice, ICreativeDevice
 {
 
-    public List<CreativeDevice> Devices { get; }
+    public List<CreativeDevice> Devices
+    {
+        get;
+    }
 
     private readonly DeviceWatcher _deviceWatcher;
     private readonly ILogger _logger;
