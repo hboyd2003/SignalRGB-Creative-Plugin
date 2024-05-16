@@ -29,7 +29,7 @@ public class CreativeSignalRGBBridgeService : BackgroundService
 
     private const int ListenPort = 12346;
     private const string Header = "Creative Bridge Plugin";
-    private UdpClient? _listener;
+    private readonly UdpClient _listener;
     private readonly ILogger _logger;
     private readonly List<IDeviceManager> _deviceManagers;
 
@@ -41,6 +41,8 @@ public class CreativeSignalRGBBridgeService : BackgroundService
             katanaDeviceManager
         };
         _logger = logger;
+        _listener = new UdpClient(ListenPort);
+        AppDomain.CurrentDomain.ProcessExit += OnProcessExit; // Handle process exit
     }
 
 
@@ -54,17 +56,18 @@ public class CreativeSignalRGBBridgeService : BackgroundService
 
             while (!stoppingToken.IsCancellationRequested)
             {
-                HandleReceivedMessageAsync(_listener.Receive(ref endPoint));
+                var result = await _listener.ReceiveAsync(stoppingToken);
+                _ = HandleReceivedMessageAsync(result.Buffer);
             }
         }
         catch (TaskCanceledException)
         {
             Environment.Exit(0);
+
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "{Message}", ex.Message);
-
+            _logger.LogError(ex, "An exception occurred: {Message}", ex.Message);
             Environment.Exit(1);
         }
     }
