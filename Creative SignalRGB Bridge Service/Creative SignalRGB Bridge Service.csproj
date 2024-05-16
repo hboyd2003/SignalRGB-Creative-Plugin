@@ -82,6 +82,8 @@
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
 	<PlatformName>windows</PlatformName>
     <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <SignAssembly>False</SignAssembly>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <WarningLevel>7</WarningLevel>

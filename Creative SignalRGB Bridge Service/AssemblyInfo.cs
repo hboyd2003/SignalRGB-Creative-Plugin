@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("CreativeSignalRGBBridge")]
-[assembly: AssemblyCopyright("Copyright © Harrison Boyd 2023")]
+[assembly: AssemblyCopyright("Copyright © Harrison Boyd 2024")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

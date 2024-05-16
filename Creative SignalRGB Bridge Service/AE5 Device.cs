@@ -132,13 +132,12 @@ public partial class AE5_Device : CreativeDevice, ICreativeDevice
         return false;
     }
 
-    // Needed as the second custom flag needs to be set to one and the IOControlCode constructor can't
+    // The class is necessary since the IOControlCode constructor does not allow for the setting of the custom flag (byte 13) in the control code.
     // See https://learn.microsoft.com/en-us/windows-hardware/drivers/kernel/defining-i-o-control-codes
     // ReSharper disable once InconsistentNaming
     private class IOCTLControlCode : IIOControlCode
     {
         IOControlAccessMode IIOControlCode.AccessMode { get; } = IOControlAccessMode.ReadWrite;
-
 
         public IOControlBufferingMethod BufferingMethod { get; } = IOControlBufferingMethod.Buffered;
 

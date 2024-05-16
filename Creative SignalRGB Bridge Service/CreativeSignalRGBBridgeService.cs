@@ -46,14 +46,10 @@ public class CreativeSignalRGBBridgeService : BackgroundService
     }
 
 
-
     protected async override Task ExecuteAsync(CancellationToken stoppingToken)
     {
         try
         {
-            _listener = new UdpClient(ListenPort);
-            var endPoint = new IPEndPoint(IPAddress.Broadcast, ListenPort);
-
             while (!stoppingToken.IsCancellationRequested)
             {
                 var result = await _listener.ReceiveAsync(stoppingToken);
@@ -75,10 +71,10 @@ public class CreativeSignalRGBBridgeService : BackgroundService
 
     private async Task HandleReceivedMessageAsync(byte[] udpMessage)
     {
-        //---Message Format---
+        // ---Message Format---
         // Line 0: Header/Identification (Creative SignalRGB Service or Creative SignalRGB Plugin)
         // Line 1: Command
-        // Line 2..n: Data
+        // Line 2…n: Data
 
         var messageArray = Encoding.UTF8.GetString(udpMessage).Split('\n');
 
@@ -123,6 +119,16 @@ public class CreativeSignalRGBBridgeService : BackgroundService
                 break;
         }
 
+    }
+
+    private void OnProcessExit(object? sender, EventArgs e)
+    {
+        foreach (var device in _deviceManagers.SelectMany(deviceManager => deviceManager.Devices))
+        {
+            device.DisconnectFromDevice();
+        }
+        _listener.Close();
+        _listener.Dispose();
     }
 
 }

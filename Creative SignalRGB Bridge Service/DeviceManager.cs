@@ -45,7 +45,7 @@ public class DeviceManager<[DynamicallyAccessedMembers(DynamicallyAccessedMember
         var deviceToRemove = Devices.FirstOrDefault(device => device.Equals(deviceInfo));
         if (deviceToRemove == null)
         {
-            _logger.LogWarning("A matching device that just disconnected but does not exist in list of devices.");
+            _logger.LogWarning("A matching device has just disconnected but it was not known to the program!");
             return;
         }
         Devices.Remove(deviceToRemove);
