@@ -90,14 +90,17 @@ public class CreativeSignalRGBBridgeService : BackgroundService
                 // Add each device to a response with their name followed by their UUID
                 StringBuilder responseBuilder = new("Creative SignalRGB Service\nDEVICES");
 
+                List<Task> connectionTasks = new();
                 foreach (var deviceManager in _deviceManagers)
                 {
                     foreach (var device in deviceManager.Devices)
                     {
                         responseBuilder.Append($"\n{device.ProductUUID},{device.DeviceName},{device.UUID}");
-                        await device.ConnectToDeviceAsync();
+                        connectionTasks.Add(device.ConnectToDeviceAsync());
                     }
                 }
+
+                await Task.WhenAll(connectionTasks);
 
                 var responseData = Encoding.UTF8.GetBytes(responseBuilder.ToString());
                 var loopback = new IPEndPoint(IPAddress.Loopback, 12347);
@@ -112,9 +115,7 @@ public class CreativeSignalRGBBridgeService : BackgroundService
                     CreativeDevice device;
                     if ((device = deviceManager.Devices.Find(deviceMatched => deviceMatched.UUID.Equals(UUID))!) is null) continue;
                     var bytes = Convert.FromBase64String(messageArray[3]);
-                    device.SendCommandAsync(bytes);
-
-
+                    _ = device.SendCommandAsync(bytes); // Fire and forget
                 }
                 break;
         }

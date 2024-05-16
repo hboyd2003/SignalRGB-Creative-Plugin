@@ -170,7 +170,7 @@ public partial class KatanaV2Device : CreativeDevice, ICreativeDevice
         await SendCommandAsync("SW_MODE1\r\n"u8.ToArray());
         // Turn on LEDs (if they are off)
         await SendCommandAsync(new byte[] { 0x5a, 0x3a, 0x02, 0x25, 0x01 });
-        SendCommandAsync(new byte[] { 0x5a, 0x3a, 0x02, 0x26, 0x01 });
+        _ = SendCommandAsync(new byte[] { 0x5a, 0x3a, 0x02, 0x26, 0x01 }); // Fire and forget
 
 
         //TODO: Check if device was actually connected.
