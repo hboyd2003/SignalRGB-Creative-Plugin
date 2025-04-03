@@ -1,5 +1,5 @@
 ﻿// This is the Creative SignalRGB Bridge Plugin/Service.
-// Copyright © 2023-2024 Harrison Boyd
+// Copyright © 2023-2025 Harrison Boyd
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,27 +20,26 @@ namespace CreativeSignalRGBBridge;
 
 public abstract class CreativeDevice : IEquatable<DeviceInformationUpdate>
 {
-    public string? DeviceInstancePath
-    {
-        get; protected set;
-    }
+    public abstract string ProductUUID { get; }
+
+    public required string DeviceInstancePath { get; init; }
+
     public bool DeviceConnected
     {
         get; protected set;
     }
-    public string? UUID
+
+    public required string UUID
     {
-        get; protected set;
+        get; init;
     }
 
-    public abstract string ProductUUID
-    {
-        get;
-    }
     public abstract string DeviceName
     {
-        get; protected set;
+        get; init;
     }
+
+
     public abstract Task<bool> SendCommandAsync(byte[] command);
     public abstract Task<bool> ConnectToDeviceAsync();
     public abstract bool DisconnectFromDevice();

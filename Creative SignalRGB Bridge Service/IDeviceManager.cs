@@ -18,8 +18,5 @@ namespace CreativeSignalRGBBridge;
 
 public interface IDeviceManager
 {
-    List<CreativeDevice> Devices
-    {
-        get;
-    }
+    List<CreativeDevice> Devices { get; }
 }

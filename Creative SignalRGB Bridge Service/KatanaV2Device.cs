@@ -1,5 +1,5 @@
 ﻿// This is the Creative SignalRGB Bridge Plugin/Service.
-// Copyright © 2023-2024 Harrison Boyd
+// Copyright © 2023-2025 Harrison Boyd
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -26,12 +26,10 @@ namespace CreativeSignalRGBBridge;
 
 public partial class KatanaV2Device : CreativeDevice, ICreativeDevice
 {
-    public override sealed string DeviceName
-    {
-        get; protected set;
-    }
+    public override string ProductUUID => "KatanaV2";
     public static string DeviceSelector => SerialDevice.GetDeviceSelectorFromUsbVidPid(Vid, Pid);
-    public override string ProductUUID { get; } = "KatanaV2";
+    public sealed override string DeviceName { get; init; }
+
 
     [GeneratedRegex(@"[\w\d&]+$")]
     // ReSharper disable once InconsistentNaming
@@ -79,7 +77,6 @@ public partial class KatanaV2Device : CreativeDevice, ICreativeDevice
     }
 
 
-
     public async override Task<bool> SendCommandAsync(byte[] command)
     {
         if (_device is not { IsOpen: true } || !DeviceConnected)
@@ -87,6 +84,7 @@ public partial class KatanaV2Device : CreativeDevice, ICreativeDevice
             _logger.LogWarning("Command was sent to {DeviceName} when it should not have been.", DeviceName);
             return false;
         }
+
         //TODO: Check if command sent successfully  
         try
         {
@@ -100,7 +98,6 @@ public partial class KatanaV2Device : CreativeDevice, ICreativeDevice
 
         return true;
     }
-
 
 
     public async Task<bool> UnlockDevice()
@@ -139,19 +136,20 @@ public partial class KatanaV2Device : CreativeDevice, ICreativeDevice
 
         // Check if unlock was successful
         using var output = firmwareUtilityProcess.StandardOutput;
-        {
-            await firmwareUtilityProcess.WaitForExitAsync();
-            var processOutput = await output.ReadToEndAsync();
-            if (processOutput.Contains(
-                    "unlock_comms [0]")) // Due to the programs poor logging there may be other random stuff before/after
-                return true;
 
-            _logger.LogError("Failed to unlock {DeviceName}:\n\nOutput of cudsp600_firmware_utility.exe:\n{processOutput}", DeviceName, processOutput);
-            return false;
-        }
+        await firmwareUtilityProcess.WaitForExitAsync();
+        var processOutput = await output.ReadToEndAsync();
+        if (processOutput.Contains(
+                "unlock_comms [0]")) // Due to the programs poor logging there may be other random stuff before/after
+            return true;
+
+        _logger.LogError(
+            "Failed to unlock {DeviceName}:\n\nOutput of cudsp600_firmware_utility.exe:\n{processOutput}",
+            DeviceName, processOutput);
+        return false;
     }
 
-    public async override Task<bool> ConnectToDeviceAsync()
+    public override async Task<bool> ConnectToDeviceAsync()
     {
         if (DeviceConnected) return false;
 
@@ -169,8 +167,8 @@ public partial class KatanaV2Device : CreativeDevice, ICreativeDevice
         // Switch mode
         await SendCommandAsync("SW_MODE1\r\n"u8.ToArray());
         // Turn on LEDs (if they are off)
-        await SendCommandAsync(new byte[] { 0x5a, 0x3a, 0x02, 0x25, 0x01 });
-        _ = SendCommandAsync(new byte[] { 0x5a, 0x3a, 0x02, 0x26, 0x01 }); // Fire and forget
+        await SendCommandAsync([0x5a, 0x3a, 0x02, 0x25, 0x01]);
+        _ = SendCommandAsync([0x5a, 0x3a, 0x02, 0x26, 0x01]); // Fire and forget
 
 
         //TODO: Check if device was actually connected.

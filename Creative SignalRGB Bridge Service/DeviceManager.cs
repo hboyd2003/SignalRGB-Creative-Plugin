@@ -1,5 +1,5 @@
 ﻿// This is the Creative SignalRGB Bridge Plugin/Service.
-// Copyright © 2023-2024 Harrison Boyd
+// Copyright © 2023-2025 Harrison Boyd
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,20 +20,19 @@ using Windows.Devices.Enumeration;
 
 namespace CreativeSignalRGBBridge;
 
-public class DeviceManager<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T> : IDeviceManager where T : CreativeDevice, ICreativeDevice
+public class
+    DeviceManager<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T> : IDeviceManager
+    where T : CreativeDevice, ICreativeDevice
 {
-
-    public List<CreativeDevice> Devices
-    {
-        get;
-    }
+    public List<CreativeDevice> Devices { get; }
 
     private readonly DeviceWatcher _deviceWatcher;
     private readonly ILogger _logger;
+
     public DeviceManager(ILogger<CreativeSignalRGBBridgeService> logger)
     {
         _logger = logger;
-        Devices = new List<CreativeDevice>();
+        Devices = [];
         _deviceWatcher = DeviceInformation.CreateWatcher(T.DeviceSelector);
         _deviceWatcher.Added += DeviceAddedEvent;
         _deviceWatcher.Removed += DeviceRemovedEvent;
@@ -48,15 +47,18 @@ public class DeviceManager<[DynamicallyAccessedMembers(DynamicallyAccessedMember
             _logger.LogWarning("A matching device has just disconnected but it was not known to the program!");
             return;
         }
+
         Devices.Remove(deviceToRemove);
-        _logger.LogInformation("Creative device {deviceToRemove.DeviceName} has disconnected from the computer", deviceToRemove.DeviceName);
+        _logger.LogInformation("Creative device {deviceToRemove.DeviceName} has disconnected from the computer",
+            deviceToRemove.DeviceName);
     }
 
     private void DeviceAddedEvent(DeviceWatcher sender, DeviceInformation deviceInfo)
     {
         // Inefficient (uses reflection)
         // TODO: Use dependency injection instead of passing logger
-        var device = Activator.CreateInstance(typeof(T), _logger, deviceInfo) as T ?? throw new InvalidOperationException();
+        var device = Activator.CreateInstance(typeof(T), _logger, deviceInfo) as T ??
+                     throw new InvalidOperationException();
         Devices.Add(device);
         _logger.LogInformation("Discovered Creative device {device.DeviceName}", device.DeviceName);
     }

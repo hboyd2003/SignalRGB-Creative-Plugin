@@ -7,9 +7,9 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("Creative SignalRGB Bridge")]
 [assembly: AssemblyDescription("Allows some Creative devices with RGB to be controlled with SignalRGB")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
+[assembly: AssemblyCompany("Harrison Boyd")]
 [assembly: AssemblyProduct("CreativeSignalRGBBridge")]
-[assembly: AssemblyCopyright("Copyright © Harrison Boyd 2024")]
+[assembly: AssemblyCopyright("Copyright © Harrison Boyd 2023-2025")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

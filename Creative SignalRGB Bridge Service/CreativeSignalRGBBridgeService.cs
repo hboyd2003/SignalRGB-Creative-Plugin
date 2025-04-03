@@ -1,5 +1,5 @@
 ﻿// This is the Creative SignalRGB Bridge Plugin/Service.
-// Copyright © 2023-2024 Harrison Boyd
+// Copyright © 2023-2025 Harrison Boyd
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,41 +25,39 @@ namespace CreativeSignalRGBBridge;
 // ReSharper disable once InconsistentNaming
 public class CreativeSignalRGBBridgeService : BackgroundService
 {
-
-
     private const int ListenPort = 12346;
     private const string Header = "Creative Bridge Plugin";
     private readonly UdpClient _listener;
     private readonly ILogger _logger;
     private readonly List<IDeviceManager> _deviceManagers;
 
-    public CreativeSignalRGBBridgeService(ILogger<CreativeSignalRGBBridgeService> logger, DeviceManager<AE5_Device> ae5DeviceManager, DeviceManager<KatanaV2Device> katanaDeviceManager)
+    public CreativeSignalRGBBridgeService(ILogger<CreativeSignalRGBBridgeService> logger,
+        DeviceManager<AE5_Device> ae5DeviceManager, DeviceManager<KatanaV2Device> katanaDeviceManager)
     {
-        _deviceManagers = new List<IDeviceManager>()
-        {
+        _deviceManagers =
+        [
             ae5DeviceManager,
             katanaDeviceManager
-        };
+        ];
         _logger = logger;
         _listener = new UdpClient(ListenPort);
         AppDomain.CurrentDomain.ProcessExit += OnProcessExit; // Handle process exit
     }
 
 
-    protected async override Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         try
         {
             while (!stoppingToken.IsCancellationRequested)
             {
                 var result = await _listener.ReceiveAsync(stoppingToken);
-                _ = HandleReceivedMessageAsync(result.Buffer);
+                _ = HandleReceivedMessageAsync(result);
             }
         }
         catch (TaskCanceledException)
         {
             Environment.Exit(0);
-
         }
         catch (Exception ex)
         {
@@ -69,14 +67,14 @@ public class CreativeSignalRGBBridgeService : BackgroundService
     }
 
 
-    private async Task HandleReceivedMessageAsync(byte[] udpMessage)
+    private async Task HandleReceivedMessageAsync(UdpReceiveResult udpMessage)
     {
         // ---Message Format---
         // Line 0: Header/Identification (Creative SignalRGB Service or Creative SignalRGB Plugin)
         // Line 1: Command
         // Line 2…n: Data
 
-        var messageArray = Encoding.UTF8.GetString(udpMessage).Split('\n');
+        var messageArray = Encoding.UTF8.GetString(udpMessage.Buffer).Split('\n');
 
         if (!messageArray[0].Trim().Equals(Header))
         {
@@ -89,7 +87,7 @@ public class CreativeSignalRGBBridgeService : BackgroundService
                 // Add each device to a response with their name followed by their UUID
                 StringBuilder responseBuilder = new("Creative SignalRGB Service\nDEVICES");
 
-                List<Task> connectionTasks = new();
+                List<Task> connectionTasks = [];
                 foreach (var deviceManager in _deviceManagers)
                 {
                     foreach (var device in deviceManager.Devices)
@@ -102,7 +100,7 @@ public class CreativeSignalRGBBridgeService : BackgroundService
                 await Task.WhenAll(connectionTasks);
 
                 var responseData = Encoding.UTF8.GetBytes(responseBuilder.ToString());
-                var loopback = new IPEndPoint(IPAddress.Loopback, 12347);
+                var loopback = new IPEndPoint(udpMessage.RemoteEndPoint.Address, 12347);
                 _listener.Send(responseData, responseData.Length, loopback);
                 break;
 
@@ -112,13 +110,14 @@ public class CreativeSignalRGBBridgeService : BackgroundService
                 foreach (var deviceManager in _deviceManagers)
                 {
                     CreativeDevice device;
-                    if ((device = deviceManager.Devices.Find(deviceMatched => deviceMatched.UUID.Equals(UUID))!) is null) continue;
+                    if ((device = deviceManager.Devices.Find(deviceMatched =>
+                            deviceMatched.UUID.Equals(UUID))!) is null) continue;
                     var bytes = Convert.FromBase64String(messageArray[3]);
                     _ = device.SendCommandAsync(bytes); // Fire and forget
                 }
+
                 break;
         }
-
     }
 
     private void OnProcessExit(object? sender, EventArgs e)
@@ -127,8 +126,8 @@ public class CreativeSignalRGBBridgeService : BackgroundService
         {
             device.DisconnectFromDevice();
         }
+
         _listener.Close();
         _listener.Dispose();
     }
-
 }

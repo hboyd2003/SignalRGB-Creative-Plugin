@@ -1,5 +1,5 @@
 ﻿// This is the Creative SignalRGB Bridge Plugin/Service.
-// Copyright © 2023-2024 Harrison Boyd
+// Copyright © 2023-2025 Harrison Boyd
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -26,13 +26,15 @@ namespace CreativeSignalRGBBridge;
 // ReSharper disable once InconsistentNaming
 public partial class AE5_Device : CreativeDevice, ICreativeDevice
 {
-    public override sealed string DeviceName { get; protected set; } = "SoundblasterX AE-5";
-    public static readonly Guid InterfaceGuid = new("{c37acb87-d563-4aa0-b761-996e7864af79}");
-    public static string DeviceSelector => CustomDevice.GetDeviceSelector(InterfaceGuid);
-    public override string ProductUUID { get; } = "AE5";
+    public override string ProductUUID => "AE5";
+    public sealed override string DeviceName { get; init; } = "SoundblasterX AE-5";
+
+    public static string DeviceSelector =>
+        CustomDevice.GetDeviceSelector(new Guid("{c37acb87-d563-4aa0-b761-996e7864af79}"));
 
     private readonly ILogger _logger;
     private CustomDevice? _device;
+
     [GeneratedRegex(@"[\w\d&]+$")]
     // ReSharper disable once InconsistentNaming
     private static partial Regex UUIDRegex();
@@ -70,7 +72,7 @@ public partial class AE5_Device : CreativeDevice, ICreativeDevice
     }
 
 
-    public async override Task<bool> SendCommandAsync(byte[] command)
+    public override async Task<bool> SendCommandAsync(byte[] command)
     {
         if (!DeviceConnected || _device == null) return false;
         var paddedCommand = new byte[1044];
@@ -93,7 +95,7 @@ public partial class AE5_Device : CreativeDevice, ICreativeDevice
         return success == 0;
     }
 
-    public async override Task<bool> ConnectToDeviceAsync()
+    public override async Task<bool> ConnectToDeviceAsync()
     {
         if (DeviceConnected) return false;
 
@@ -137,14 +139,14 @@ public partial class AE5_Device : CreativeDevice, ICreativeDevice
     // ReSharper disable once InconsistentNaming
     private class IOCTLControlCode : IIOControlCode
     {
-        IOControlAccessMode IIOControlCode.AccessMode { get; } = IOControlAccessMode.ReadWrite;
+        IOControlAccessMode IIOControlCode.AccessMode => IOControlAccessMode.ReadWrite;
 
-        public IOControlBufferingMethod BufferingMethod { get; } = IOControlBufferingMethod.Buffered;
+        public IOControlBufferingMethod BufferingMethod => IOControlBufferingMethod.Buffered;
 
-        public uint ControlCode { get; } = 0x77772400;
+        public uint ControlCode => 0x77772400;
 
-        public ushort DeviceType { get; } = 0x7777;
+        public ushort DeviceType => 0x7777;
 
-        public ushort Function { get; } = 0x100;
+        public ushort Function => 0x100;
     }
 }

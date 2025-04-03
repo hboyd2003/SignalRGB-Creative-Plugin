@@ -2,7 +2,7 @@
 
 <!--
     This is the Creative SignalRGB Bridge Plugin/Service.
-    Copyright © 2023 Harrison Boyd
+    Copyright © 2023-2025 Harrison Boyd
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@
 
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
     <Package Name="$(Name)"
-        Manufacturer="Prismo"
+        Manufacturer="Harrison Boyd"
         Version="V2.0.0.0"
         UpgradeCode="c04a0f76-b793-4ab0-80c7-d37943f19888"
         Compressed="true">
@@ -74,7 +74,7 @@
                                 Type="ownProcess"
                                 Name="Creative SignalRGB Bridge"
                                 DisplayName="$(Name)"
-                                Description="Allows SignalRGB to control the RGB Leds on some creative PCIE devices"
+                                Description="Allows SignalRGB to control the RGB LEDs on some creative PCIE devices"
                                 Start="auto"
                                 ErrorControl="normal" />
 
