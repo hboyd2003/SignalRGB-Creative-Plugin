@@ -55,13 +55,12 @@ public class CreativeSignalRGBBridgeService : BackgroundService
                 _ = HandleReceivedMessageAsync(result);
             }
         }
-        catch (TaskCanceledException)
-        {
+        catch (Exception ex) when (ex is TaskCanceledException or OperationCanceledException) {
             Environment.Exit(0);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An exception occurred: {Message}", ex.Message);
+            _logger.LogError(ex, "An unexpected exception occurred: {Message}", ex.Message);
             Environment.Exit(1);
         }
     }
